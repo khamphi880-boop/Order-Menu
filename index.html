@@ -17,7 +17,7 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
-        /* Style for custom menu card in Modal */
+        /* Style for custom menu card in Modal (retained) */
         .matcha-menu-card, .coffee-menu-card, .smoothie-menu-card {
             display: flex;
             justify-content: space-between;
@@ -38,7 +38,7 @@
         .price-coffee { color: #7c2d12; /* text-amber-900 */ font-weight: 700; }
         .price-smoothie { color: #0284c7; /* text-sky-600 */ font-weight: 700; }
         
-        /* NEW: QR Placeholder Style */
+        /* QR Placeholder Style */
         .qr-placeholder {
             width: 256px;
             height: 256px;
@@ -226,14 +226,15 @@
             
             <div class="flex justify-center flex-col items-center p-2 bg-white border border-gray-100 rounded-xl shadow-lg mb-4">
                 
-                <div class="qr-placeholder my-4">
-                    <p>
-                        ตำแหน่งรูปภาพ QR Code<br>
-                        (PromptPay Krungthai)<br>
-                        **รูปภาพนี้ต้องถูกอัปโหลดและเรียกใช้โดยตรง**
-                    </p>
+                <div class="my-4">
+                    <div class="qr-placeholder" style="max-width: 256px; max-height: 256px;">
+                        <p>
+                            **ตำแหน่งรูปภาพ QR Code**<br>
+                            กรุณาแทนที่ Placeholder นี้ด้วย<br>
+                            แท็ก `<img>` และ Raw URL ของคุณ
+                        </p>
+                    </div>
                 </div>
-                
                 <div class="w-full p-2 border-t pt-2">
                     <p class="text-base text-gray-700 font-semibold">
                         ชื่อบัญชี: <span class="font-bold text-gray-900">น.ส.นฤตญา นาเมืองรักษ์</span>
@@ -250,7 +251,7 @@
         </div>
     </div>
     <script>
-        // *** Menu Data (All lists combined) ***
+        // *** Menu Data (Full lists) ***
         const menuData = [
             { id: 1, name: 'เผือก', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
             { id: 2, name: 'แคนตาลูป', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
@@ -393,7 +394,8 @@
             qrPaymentModal.classList.remove('hidden');
         }
 
-        // --- Fruit Smoothie Modal Functions ---
+        // --- All Modal render functions ---
+        
         function showFruitSmoothieModal() {
             renderFruitSmoothieMenu();
             fruitSmoothieModal.classList.remove('hidden');
@@ -432,7 +434,7 @@
             // --- 2. Smoothie Yogurt Section ---
             const yogurtHeader = document.createElement('div');
             yogurtHeader.className = 'flex justify-between text-center font-bold text-gray-600 mb-2 border-b pb-1 text-sm';
-            yogurtHeader.innerHTML = `
+            yogartHeader.innerHTML = `
                 <span class="w-2/3 text-left">เมนู (ปั่นเท่านั้น)</span>
                 <span class="w-1/6">16 Oz.</span>
                 <span class="w-1/6">22 Oz.</span>
@@ -454,8 +456,7 @@
                 smoothieYogurtListEl.appendChild(menuCard);
             });
         }
-
-        // --- Coffee Menu Functions ---
+        
         function showCoffeeMenuModal() {
             renderCoffeeMenu();
             coffeeModal.classList.remove('hidden');
@@ -491,8 +492,7 @@
                 coffeeMenuListEl.appendChild(menuCard);
             });
         }
-
-        // --- Matcha Menu Functions ---
+        
         function showMatchaMenuModal() {
             renderMatchaMenu();
             matchaModal.classList.remove('hidden');
@@ -517,6 +517,8 @@
             });
         }
         
+        // --- Core Application Logic ---
+
         function renderMenu() {
             const specialMenuIds = [
                 ...matchaMenuData, 
