@@ -419,16 +419,17 @@
 
         // 🔥 Firebase Realtime Listeners (ใช้การจัดเรียงภายใน JS เพื่อความเสถียร) 🔥
         // 🔥 Firebase Realtime Listeners (ชุดแก้ไขสุดท้ายเพื่อจัดการ Undefined Timestamp) 🔥
+        // 🔥 Firebase Realtime Listeners (ชุดแก้ไขสุดท้าย - เน้นความเสถียร) 🔥
 function initFirebaseListeners() {
     // 1. Realtime Listener สำหรับคิวออเดอร์ (orders Collection)
-    // ลบ .orderBy("placedAt", "asc") ออกเพื่อหลีกเลี่ยงข้อจำกัดของ Firestore Query
+    // ดึงข้อมูลทั้งหมดโดยไม่มีการเรียงลำดับ (เพื่อให้ Firestore ทำงานง่ายที่สุด)
     db.collection("orders").onSnapshot(snapshot => { 
         orderQueue = snapshot.docs.map(doc => ({ 
             id: doc.id, 
             ...doc.data() 
         }));
         
-        // จัดเรียงข้อมูลด้วย JavaScript เพื่อจัดกลุ่มตามสถานะและเวลา
+        // จัดเรียงข้อมูลด้วย JavaScript
         orderQueue.sort((a, b) => {
             const statusOrder = { 'คิว': 1, 'กำลังทำ': 2, 'เสร็จแล้ว': 3, 'ยกเลิก': 4 };
             const statusA = statusOrder[a.status];
@@ -439,21 +440,20 @@ function initFirebaseListeners() {
                 return statusA - statusB;
             }
 
-            // 2. เรียงตามเวลาที่สั่ง (PlacedAt) สำหรับสถานะเดียวกัน
-            // ใช้ค่า seconds หรือ 0 ถ้า undefined (นี่คือการแก้ไขหลัก)
-            // ตรวจสอบว่า placedAt มีค่าและเป็น Timestamp object ก่อนเข้าถึง seconds
+            // 2. เรียงตามเวลาที่สั่ง (PlacedAt)
+            // ใช้ค่า seconds หรือ 0 ถ้า undefined/null (จัดการข้อมูลดิบจาก Firestore)
             const timeA = (a.placedAt && typeof a.placedAt.seconds === 'number') ? a.placedAt.seconds : 0;
             const timeB = (b.placedAt && typeof b.placedAt.seconds === 'number') ? b.placedAt.seconds : 0;
             
-            return timeA - timeB; // เรียงจากเก่าไปใหม่ (0 จะถูกจัดไว้ข้างหน้า)
+            return timeA - timeB; // เรียงจากเก่าไปใหม่
         });
         
         // เรียกฟังก์ชันแสดงผล
         renderOrderQueue();
     }, error => {
-        // หากมี Error จาก Rules จะถูกจับที่นี่
-        console.error("Error listening to orders: ", error);
-        orderQueueEl.innerHTML = '<p class="text-red-500 text-center mt-4 font-bold">⚠️ ERROR: ไม่สามารถเชื่อมต่อฐานข้อมูลได้ (โปรดตรวจสอบ Firebase Rules)</p>';
+        // 🚨 นี่คือโค้ดสำคัญในการจับ Error
+        console.error("Firebase Order Listener Error:", error);
+        orderQueueEl.innerHTML = '<p class="text-red-500 text-center mt-4 font-bold">⚠️ ERROR: ตรวจสอบ Console (F12) และ Firebase Rules</p>';
     });
 
     // 2. Listener สำหรับยอดขาย (salesLog Collection)
@@ -461,7 +461,7 @@ function initFirebaseListeners() {
         menuSalesLog = snapshot.docs.map(doc => doc.data());
         updateSalesDashboard();
     }, error => {
-        console.error("Error listening to sales log: ", error);
+        console.error("Firebase Sales Listener Error:", error);
     });
 }
         
@@ -913,4 +913,5 @@ function initFirebaseListeners() {
     </script>
 </body>
 </html>
+
 
