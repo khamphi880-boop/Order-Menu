@@ -446,11 +446,58 @@ function initFirebaseListeners() {
             return timeA - timeB; // เรียงจากเก่าไปใหม่
         });
         
-        // 3. เรียกฟังก์ชันแสดงผล
-        renderOrderQueue();
-    }, error => {
-        console.error("Error listening to orders: ", error);
+        // 🔥 UPDATED: renderOrderQueue (เน้นออเดอร์ที่ใช้งานอยู่) 🔥
+function renderOrderQueue() {
+    // 1. กรองเฉพาะออเดอร์ที่ยังอยู่ในกระบวนการ (คิว และ กำลังทำ)
+    const activeQueue = orderQueue.filter(order => order.status !== 'เสร็จแล้ว' && order.status !== 'ยกเลิก');
+    
+    // เลือกชุดข้อมูลที่จะแสดง: ถ้ามีออเดอร์ที่ Active ให้แสดง Active Queue, ไม่งั้นแสดงทั้งหมด
+    const displayQueue = activeQueue.length > 0 ? activeQueue : orderQueue;
+
+    if (displayQueue.length === 0) {
+        orderQueueEl.innerHTML = '<p class="text-gray-400 text-center mt-4">ยังไม่มีออเดอร์ในคิว</p>';
+        return;
+    }
+
+    orderQueueEl.innerHTML = '';
+    displayQueue.forEach(order => {
+        const itemsSummary = order.items.map(item => `${item.name} (${item.size}, หวาน ${item.sweetness}) x${item.quantity}`).join(', ');
+        const statusColor = {
+            'คิว': 'bg-blue-100 text-blue-800',
+            'กำลังทำ': 'bg-yellow-100 text-yellow-800',
+            'เสร็จแล้ว': 'bg-green-100 text-green-800',
+            'ยกเลิก': 'bg-red-100 text-red-800'
+        }[order.status];
+        
+        const isCompleted = order.status === 'เสร็จแล้ว' || order.status === 'ยกเลิก';
+        
+        const orderCard = document.createElement('div');
+        // ใช้ opacity เพื่อเน้นว่าออเดอร์เสร็จแล้ว
+        orderCard.className = `p-4 rounded-lg shadow-sm ${isCompleted ? 'bg-gray-200 opacity-75' : 'bg-gray-50 hover:bg-white'}`;
+        
+        orderCard.innerHTML = `
+            <div class="flex justify-between items-start mb-2">
+                <div>
+                    <h4 class="font-bold text-lg">ออเดอร์ #${order.id.substring(0, 8)}...</h4> 
+                    <p class="text-sm text-gray-600">${itemsSummary}</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        <span class="font-semibold">ที่อยู่:</span> ${order.address}
+                    </p>
+                </div>
+                <span class="text-lg font-bold text-teal-600">฿${order.total.toLocaleString('th-TH')}</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-semibold px-2.5 py-0.5 rounded-full ${statusColor}">${order.status}</span>
+                <div class="flex gap-2">
+                    ${order.status === 'คิว' ? `<button class="text-xs bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'กำลังทำ')">รับออเดอร์</button>` : ''}
+                    ${order.status === 'กำลังทำ' ? `<button class="text-xs bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'เสร็จแล้ว')">เสร็จสิ้น</button>` : ''}
+                    ${!isCompleted ? `<button class="text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'ยกเลิก')">ยกเลิก</button>` : ''}
+                </div>
+            </div>
+        `;
+        orderQueueEl.appendChild(orderCard);
     });
+}
 
     // 2. Listener สำหรับยอดขาย (salesLog Collection) (คงเดิม)
     db.collection("salesLog").onSnapshot(snapshot => {
@@ -900,5 +947,6 @@ function initFirebaseListeners() {
     </script>
 </body>
 </html>
+
 
 
