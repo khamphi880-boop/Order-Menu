@@ -417,48 +417,35 @@
             return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
         }
 
-        // 🔥 Firebase Realtime Listeners (ชุดแก้ไขล่าสุด) 🔥
-        function initFirebaseListeners() {
-            // 1. Realtime Listener สำหรับคิวออเดอร์ (orders Collection)
-            db.collection("orders").onSnapshot(snapshot => { 
-                orderQueue = snapshot.docs.map(doc => ({ 
-                    id: doc.id, 
-                    ...doc.data() 
-                }));
-                
-                // จัดเรียงข้อมูลด้วย JavaScript 
-                orderQueue.sort((a, b) => {
-                    const statusOrder = { 'คิว': 1, 'กำลังทำ': 2, 'เสร็จแล้ว': 3, 'ยกเลิก': 4 };
-                    const statusA = statusOrder[a.status];
-                    const statusB = statusOrder[b.status];
+       // 🔥 Firebase Realtime Listeners (ใช้ Query 2 ชั้น) 🔥
+function initFirebaseListeners() {
+    // 1. Realtime Listener สำหรับคิวออเดอร์ (orders Collection)
+    // Query นี้ต้องใช้ Index ที่สร้างในขั้นตอนที่ 2
+    db.collection("orders")
+        .orderBy("status", "asc") 
+        .orderBy("placedAt", "asc") 
+        .onSnapshot(snapshot => { 
+            orderQueue = snapshot.docs.map(doc => ({ 
+                id: doc.id, 
+                ...doc.data() 
+            }));
+            
+            // เมื่อใช้ orderBy 2 ตัวนี้แล้ว ไม่จำเป็นต้องมีการจัดเรียงด้วย JS อีก
+            
+            renderOrderQueue();
+        }, error => {
+            console.error("Firebase Order Listener Error:", error);
+            orderQueueEl.innerHTML = '<p class="text-red-500 text-center mt-4 font-bold">⚠️ ERROR: ไม่สามารถเชื่อมต่อฐานข้อมูลได้ (โปรดตรวจสอบ Console/Rules/Index)</p>';
+        });
 
-                    // 1. เรียงตามสถานะ (คิว > กำลังทำ > เสร็จแล้ว)
-                    if (statusA !== statusB) {
-                        return statusA - statusB;
-                    }
-
-                    // 2. เรียงตามเวลาที่สั่ง (PlacedAt) 
-                    const timeA = (a.placedAt && typeof a.placedAt.seconds === 'number') ? a.placedAt.seconds : 0;
-                    const timeB = (b.placedAt && typeof b.placedAt.seconds === 'number') ? b.placedAt.seconds : 0;
-                    
-                    return timeA - timeB; // เรียงจากเก่าไปใหม่
-                });
-                
-                renderOrderQueue();
-            }, error => {
-                console.error("Firebase Order Listener Error:", error);
-                orderQueueEl.innerHTML = '<p class="text-red-500 text-center mt-4 font-bold">⚠️ ERROR: ไม่สามารถเชื่อมต่อฐานข้อมูลได้ (โปรดตรวจสอบ Console/Rules)</p>';
-            });
-
-            // 2. Listener สำหรับยอดขาย (salesLog Collection)
-            db.collection("salesLog").onSnapshot(snapshot => {
-                menuSalesLog = snapshot.docs.map(doc => doc.data());
-                updateSalesDashboard();
-            }, error => {
-                console.error("Firebase Sales Listener Error:", error);
-            });
-        }
-        
+    // 2. Listener สำหรับยอดขาย (salesLog Collection)
+    db.collection("salesLog").onSnapshot(snapshot => {
+        menuSalesLog = snapshot.docs.map(doc => doc.data());
+        updateSalesDashboard();
+    }, error => {
+        console.error("Firebase Sales Listener Error:", error);
+    });
+} 
         // --- Modal Render Functions (นำโค้ดกลับมา) ---
         
         function showMatchaMenuModal() {
@@ -902,3 +889,4 @@
     </script>
 </body>
 </html>
+
