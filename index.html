@@ -417,35 +417,36 @@
             return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
         }
 
-       // 🔥 Firebase Realtime Listeners 🔥
+      // 🔥 Firebase Realtime Listeners (ชุดแก้ไขล่าสุด) 🔥
 function initFirebaseListeners() {
     // 1. Realtime Listener สำหรับคิวออเดอร์ (orders Collection)
-    // ใช้ onSnapshot เพื่อรับการอัปเดตแบบเรียลไทม์
-    db.collection("orders").onSnapshot(snapshot => { // ลบ .orderBy("placedAt", "asc") ออกชั่วคราว เพื่อแก้ปัญหาการเรียงลำดับ
+    // ใช้ query เพื่อให้ Firebase เรียงลำดับตาม 'placedAt' ก่อน (ประสิทธิภาพดีกว่า)
+    db.collection("orders").orderBy("placedAt", "asc").onSnapshot(snapshot => { 
         orderQueue = snapshot.docs.map(doc => ({ 
             id: doc.id, 
             ...doc.data() 
         }));
         
-        // ** แก้ไข: จัดเรียงข้อมูลโดยใช้ค่า Timestamp ที่แปลงเป็นมิลลิวินาที **
+        // 2. เรียงลำดับข้อมูลด้วย JavaScript อีกครั้งเพื่อจัดกลุ่มตามสถานะ
         orderQueue.sort((a, b) => {
             const statusOrder = { 'คิว': 1, 'กำลังทำ': 2, 'เสร็จแล้ว': 3, 'ยกเลิก': 4 };
             const statusA = statusOrder[a.status];
             const statusB = statusOrder[b.status];
 
-            // 1. เรียงตามสถานะ (คิว > กำลังทำ > เสร็จแล้ว)
+            // เรียงตามสถานะก่อน (คิว -> กำลังทำ -> เสร็จแล้ว)
             if (statusA !== statusB) {
                 return statusA - statusB;
             }
 
-            // 2. เรียงตามเวลาที่สั่ง (PlacedAt) สำหรับสถานะเดียวกัน
-            // ตรวจสอบและแปลง Timestamp เป็นมิลลิวินาที (ถ้ามี)
-            const timeA = a.placedAt ? a.placedAt.seconds * 1000 : 0;
-            const timeB = b.placedAt ? b.placedAt.seconds * 1000 : 0;
+            // สำหรับสถานะเดียวกัน ให้เรียงตามเวลาที่สั่ง (PlacedAt)
+            // Firebase Timestamp object (a.placedAt) มี property 'seconds' และ 'nanoseconds'
+            const timeA = a.placedAt ? a.placedAt.seconds : 0;
+            const timeB = b.placedAt ? b.placedAt.seconds : 0;
             
-            return timeA - timeB;
+            return timeA - timeB; // เรียงจากเก่าไปใหม่
         });
         
+        // 3. เรียกฟังก์ชันแสดงผล
         renderOrderQueue();
     }, error => {
         console.error("Error listening to orders: ", error);
@@ -899,4 +900,5 @@ function initFirebaseListeners() {
     </script>
 </body>
 </html>
+
 
