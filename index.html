@@ -418,47 +418,52 @@
         }
 
         // 🔥 Firebase Realtime Listeners (ใช้การจัดเรียงภายใน JS เพื่อความเสถียร) 🔥
-        function initFirebaseListeners() {
-            // 1. Realtime Listener สำหรับคิวออเดอร์ (orders Collection)
-            // ลบ .orderBy("placedAt", "asc") ออกเพื่อหลีกเลี่ยงข้อจำกัดของ Firestore Query
-            db.collection("orders").onSnapshot(snapshot => { 
-                orderQueue = snapshot.docs.map(doc => ({ 
-                    id: doc.id, 
-                    ...doc.data() 
-                }));
-                
-                // จัดเรียงข้อมูลด้วย JavaScript เพื่อจัดกลุ่มตามสถานะและเวลา
-                orderQueue.sort((a, b) => {
-                    const statusOrder = { 'คิว': 1, 'กำลังทำ': 2, 'เสร็จแล้ว': 3, 'ยกเลิก': 4 };
-                    const statusA = statusOrder[a.status];
-                    const statusB = statusOrder[b.status];
+        // 🔥 Firebase Realtime Listeners (ชุดแก้ไขสุดท้ายเพื่อจัดการ Undefined Timestamp) 🔥
+function initFirebaseListeners() {
+    // 1. Realtime Listener สำหรับคิวออเดอร์ (orders Collection)
+    // ลบ .orderBy("placedAt", "asc") ออกเพื่อหลีกเลี่ยงข้อจำกัดของ Firestore Query
+    db.collection("orders").onSnapshot(snapshot => { 
+        orderQueue = snapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            ...doc.data() 
+        }));
+        
+        // จัดเรียงข้อมูลด้วย JavaScript เพื่อจัดกลุ่มตามสถานะและเวลา
+        orderQueue.sort((a, b) => {
+            const statusOrder = { 'คิว': 1, 'กำลังทำ': 2, 'เสร็จแล้ว': 3, 'ยกเลิก': 4 };
+            const statusA = statusOrder[a.status];
+            const statusB = statusOrder[b.status];
 
-                    // 1. เรียงตามสถานะ (คิว > กำลังทำ > เสร็จแล้ว)
-                    if (statusA !== statusB) {
-                        return statusA - statusB;
-                    }
+            // 1. เรียงตามสถานะ (คิว > กำลังทำ > เสร็จแล้ว)
+            if (statusA !== statusB) {
+                return statusA - statusB;
+            }
 
-                    // 2. เรียงตามเวลาที่สั่ง (PlacedAt) สำหรับสถานะเดียวกัน
-                    // ดึงค่า seconds จาก Timestamp object เพื่อใช้ในการเปรียบเทียบ
-                    const timeA = a.placedAt ? a.placedAt.seconds : 0;
-                    const timeB = b.placedAt ? b.placedAt.seconds : 0;
-                    
-                    return timeA - timeB; // เรียงจากเก่าไปใหม่
-                });
-                
-                renderOrderQueue();
-            }, error => {
-                console.error("Error listening to orders: ", error);
-            });
+            // 2. เรียงตามเวลาที่สั่ง (PlacedAt) สำหรับสถานะเดียวกัน
+            // ใช้ค่า seconds หรือ 0 ถ้า undefined (นี่คือการแก้ไขหลัก)
+            // ตรวจสอบว่า placedAt มีค่าและเป็น Timestamp object ก่อนเข้าถึง seconds
+            const timeA = (a.placedAt && typeof a.placedAt.seconds === 'number') ? a.placedAt.seconds : 0;
+            const timeB = (b.placedAt && typeof b.placedAt.seconds === 'number') ? b.placedAt.seconds : 0;
+            
+            return timeA - timeB; // เรียงจากเก่าไปใหม่ (0 จะถูกจัดไว้ข้างหน้า)
+        });
+        
+        // เรียกฟังก์ชันแสดงผล
+        renderOrderQueue();
+    }, error => {
+        // หากมี Error จาก Rules จะถูกจับที่นี่
+        console.error("Error listening to orders: ", error);
+        orderQueueEl.innerHTML = '<p class="text-red-500 text-center mt-4 font-bold">⚠️ ERROR: ไม่สามารถเชื่อมต่อฐานข้อมูลได้ (โปรดตรวจสอบ Firebase Rules)</p>';
+    });
 
-            // 2. Listener สำหรับยอดขาย (salesLog Collection)
-            db.collection("salesLog").onSnapshot(snapshot => {
-                menuSalesLog = snapshot.docs.map(doc => doc.data());
-                updateSalesDashboard();
-            }, error => {
-                console.error("Error listening to sales log: ", error);
-            });
-        }
+    // 2. Listener สำหรับยอดขาย (salesLog Collection)
+    db.collection("salesLog").onSnapshot(snapshot => {
+        menuSalesLog = snapshot.docs.map(doc => doc.data());
+        updateSalesDashboard();
+    }, error => {
+        console.error("Error listening to sales log: ", error);
+    });
+}
         
         // --- Modal Render Functions (รวมเข้าที่นี่) ---
         
@@ -908,3 +913,4 @@
     </script>
 </body>
 </html>
+
