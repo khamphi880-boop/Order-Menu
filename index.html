@@ -417,31 +417,48 @@
             return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
         }
 
-        // 🔥 Firebase Realtime Listeners 🔥
-        function initFirebaseListeners() {
-            // 1. Realtime Listener สำหรับคิวออเดอร์ (orders Collection)
-            db.collection("orders").orderBy("placedAt", "asc").onSnapshot(snapshot => {
-                orderQueue = snapshot.docs.map(doc => ({ 
-                    id: doc.id, 
-                    ...doc.data() 
-                }));
-                orderQueue.sort((a, b) => {
-                    const statusOrder = { 'คิว': 1, 'กำลังทำ': 2, 'เสร็จแล้ว': 3, 'ยกเลิก': 4 };
-                    return statusOrder[a.status] - statusOrder[b.status];
-                });
-                renderOrderQueue();
-            }, error => {
-                console.error("Error listening to orders: ", error);
-            });
+       // 🔥 Firebase Realtime Listeners 🔥
+function initFirebaseListeners() {
+    // 1. Realtime Listener สำหรับคิวออเดอร์ (orders Collection)
+    // ใช้ onSnapshot เพื่อรับการอัปเดตแบบเรียลไทม์
+    db.collection("orders").onSnapshot(snapshot => { // ลบ .orderBy("placedAt", "asc") ออกชั่วคราว เพื่อแก้ปัญหาการเรียงลำดับ
+        orderQueue = snapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            ...doc.data() 
+        }));
+        
+        // ** แก้ไข: จัดเรียงข้อมูลโดยใช้ค่า Timestamp ที่แปลงเป็นมิลลิวินาที **
+        orderQueue.sort((a, b) => {
+            const statusOrder = { 'คิว': 1, 'กำลังทำ': 2, 'เสร็จแล้ว': 3, 'ยกเลิก': 4 };
+            const statusA = statusOrder[a.status];
+            const statusB = statusOrder[b.status];
 
-            // 2. Listener สำหรับยอดขาย (salesLog Collection)
-            db.collection("salesLog").onSnapshot(snapshot => {
-                menuSalesLog = snapshot.docs.map(doc => doc.data());
-                updateSalesDashboard();
-            }, error => {
-                console.error("Error listening to sales log: ", error);
-            });
-        }
+            // 1. เรียงตามสถานะ (คิว > กำลังทำ > เสร็จแล้ว)
+            if (statusA !== statusB) {
+                return statusA - statusB;
+            }
+
+            // 2. เรียงตามเวลาที่สั่ง (PlacedAt) สำหรับสถานะเดียวกัน
+            // ตรวจสอบและแปลง Timestamp เป็นมิลลิวินาที (ถ้ามี)
+            const timeA = a.placedAt ? a.placedAt.seconds * 1000 : 0;
+            const timeB = b.placedAt ? b.placedAt.seconds * 1000 : 0;
+            
+            return timeA - timeB;
+        });
+        
+        renderOrderQueue();
+    }, error => {
+        console.error("Error listening to orders: ", error);
+    });
+
+    // 2. Listener สำหรับยอดขาย (salesLog Collection) (คงเดิม)
+    db.collection("salesLog").onSnapshot(snapshot => {
+        menuSalesLog = snapshot.docs.map(doc => doc.data());
+        updateSalesDashboard();
+    }, error => {
+        console.error("Error listening to sales log: ", error);
+    });
+}
         
         // --- Modal Render Functions (รวมเข้าที่นี่) ---
         
@@ -882,3 +899,4 @@
     </script>
 </body>
 </html>
+
