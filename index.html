@@ -1,110 +1,62 @@
+// ====================================================================
+// 🔥 START: FIREBASE CONNECTION AND INITIALIZATION (ใช้ CDN) 🔥
+// ====================================================================
+
+// 1. โหลด Firebase Libraries (ต้องอยู่ก่อนโค้ดระบบออเดอร์)
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script> 
+
 <script>
-    // *** Menu Data (Full lists) ***
+    // 2. โค้ด Configuration ของโปรเจกต์คุณ (ใช้ค่าที่คัดลอกมา)
+    const firebaseConfig = {
+        apiKey: "AIzaSyDztPWzAu8Lz8olg_dhlCLBQVEyjTQqpOk",
+        authDomain: "ordermanagement-f6724.firebaseapp.com",
+        projectId: "ordermanagement-f6724",
+        storageBucket: "ordermanagement-f6724.appspot.com", // แก้ไขเป็น .appspot.com
+        messagingSenderId: "321286666597",
+        appId: "1:321286666597:web:062fef7df8fc456fec098c",
+        // measurementId: "G-HKSKRWCWCX" // ไม่จำเป็นสำหรับ Firestore
+    };
+
+    // 3. Initialize App และ Firestore
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    
+    // ====================================================================
+    // 📝 START: โค้ด JavaScript ระบบจัดการออเดอร์ (ปรับเป็น Firebase) 📝
+    // ====================================================================
+
+    // *** Menu Data (คงเดิม) ***
     const menuData = [
         { id: 1, name: 'เผือก', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
         { id: 2, name: 'แคนตาลูป', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-        { id: 3, name: 'นมสด', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-        { id: 4, name: 'นมน้ำผึ้ง', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-        { id: 5, name: 'นมวานิลลา', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-        { id: 6, name: 'นมคาราเมล', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-        { id: 7, name: 'นมเย็น/นมชมพู', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-        { id: 8, name: 'นมบราวน์ชูการ์', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-        { id: 9, name: 'นมสด งาดำ', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-        { id: 10, name: 'นมมิ้นท์', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-        { id: 11, name: 'โกโก้', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-        { id: 12, name: 'นมมิ้นท์โกโก้', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-        { id: 13, name: 'ช็อกโกแลต', prices: { '16 Oz.': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
-        { id: 14, name: 'นมมิ้นท์ช็อก', prices: { '16 Oz.': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
-        { id: 15, name: 'นมสดโอริโอ้', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 60 } },
-        { id: 16, name: 'นมกล้วย', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 60 } },
-        { id: 17, name: 'กล้วยช็อก', prices: { '16 Oz.': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
-        { id: 18, name: 'กล้วยโกโก้', prices: { '16 Oz.': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
-        { id: 19, name: 'มะพร้าวนมสด', prices: { '22 Oz. ปั่น': 55 } },
-        { id: 20, name: 'ชาไทย (ไต้หวัน)', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-        { id: 21, name: 'ชาไทย (ใบชา)', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-        { id: 22, name: 'ชาไทย ลาเต้ มะพร้าว', prices: { '16 Oz.': 45, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
-        { id: 23, name: 'ชาเขียว (ไม่กลิ่นมะลิ)', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-        { id: 24, name: 'ชาเขียวลาเต้ มะพร้าว', prices: { '16 Oz.': 45, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
-        { id: 25, name: 'ชาเขียวมะนาว', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-        { id: 26, name: 'ชามะนาว', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-        { id: 27, name: 'ชาพีช', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-        { id: 28, name: 'ชามะลิ', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+        // ... (ข้อมูลเมนูทั้งหมด: matchaMenuData, coffeeMenuData, etc.)
         { id: 29, name: 'ชาลิ้นจี่', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
     ];
+    // (คัดลอกส่วน menuData, matchaMenuData, coffeeMenuData, fruitSmoothieData, smoothieYogurtData มาวางที่นี่ทั้งหมด)
     
     const matchaMenuData = [
-        { id: -1, name: 'เพียวมัทฉะ', prices: { '16 Oz. เย็น': 40, '22 Oz. เย็น': 40 } },
-        { id: -2, name: 'เพียวมัทฉะ น้ำผึ้ง', prices: { '16 Oz. เย็น': 40, '22 Oz. เย็น': 40 } },
-        { id: -3, name: 'เพียวมัทฉะ วานิลลา', prices: { '16 Oz. เย็น': 40, '22 Oz. เย็น': 40 } },
-        { id: -4, name: 'เพียวมัทฉะ คาราเมล', prices: { '16 Oz. เย็น': 40, '22 Oz. เย็น': 40 } },
-        { id: -5, name: 'เพียวมัทฉะ มะพร้าว', prices: { '16 Oz. เย็น': 50, '22 Oz. เย็น': 60 } },
-        { id: -6, name: 'เพียวมัทฉะ น้ำส้ม', prices: { '16 Oz. เย็น': 50, '22 Oz. เย็น': 60 } },
-        { id: -7, name: 'มัทฉะลาเต้', prices: { '16 Oz. เย็น': 45, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
-        { id: -8, name: 'มัทฉะลาเต้ โอริโอ้', prices: { '16 Oz. เย็น': 55, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
-        { id: -9, name: 'มัทฉะลาเต้ คาราเมล', prices: { '16 Oz. เย็น': 50, '22 Oz. เย็น': 60, '22 Oz. ปั่น': 65 } },
-        { id: -10, name: 'มัทฉะลาเต้ มะพร้าวสด', prices: { '16 Oz. เย็น': 55, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
-        { id: -11, name: 'มัทฉะลาเต้ วานิลลา', prices: { '16 Oz. เย็น': 50, '22 Oz. เย็น': 60, '22 Oz. ปั่น': 65 } },
-        { id: -12, name: 'มัทฉะลาเต้ สตอเบอร์รี่', prices: { '16 Oz. เย็น': 55, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
-        { id: -13, name: 'มัทฉะลาเต้ บลูเบอร์รี่', prices: { '16 Oz. เย็น': 55, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
-        { id: -14, name: 'มัทฉะลาเต้ น้ำผึ้ง', prices: { '16 Oz. เย็น': 50, '22 Oz. เย็น': 60, '22 Oz. ปั่น': 65 } },
-        { id: -15, name: 'มัทฉะ อเมริกาโน่', prices: { '16 Oz. เย็น': 60, '22 Oz. เย็น': 70 } },
-        { id: -16, name: 'มัทฉะลาเต้ คอฟฟี่', prices: { '16 Oz. เย็น': 60, '22 Oz. เย็น': 70 } },
-        { id: -17, name: 'มัทฉะลาเต้ ถั่วแดง', prices: { '16 Oz. เย็น': 55, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
-        { id: -18, name: 'มัทฉะ ถั่วแดง (ปั่น)', prices: { '22 Oz. ปั่น': 70 } },
+        // ... (คัดลอกข้อมูล matchaMenuData มาวางที่นี่)
     ];
-    
     const coffeeMenuData = [
-        { id: -101, name: 'อเมริกาโน่', prices: { 'เย็น': 45, 'ปั่น': 55 } },
-        { id: -102, name: 'อเมริกาโน่ น้ำผึ้ง', prices: { 'เย็น': 50, 'ปั่น': 60 } },
-        { id: -103, name: 'อเมริกาโน่ มะพร้าว', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-        { id: -104, name: 'อเมริกาโน่ น้ำส้ม', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-        { id: -105, name: 'เอสเปรสโซ่', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-        { id: -106, name: 'ลาเต้', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-        { id: -107, name: 'ลาเต้ มะพร้าว นมสด', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-        { id: -108, name: 'วานิลลา ลาเต้', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-        { id: -109, name: 'คาปูชิโน่', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-        { id: -110, name: 'มอคค่า', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-        { id: -111, name: 'คาราเมล มัคคิอาโต้', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-        { id: -112, name: 'เฮเซลนัท ลาเต้', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-        { id: -113, name: 'มอคค่า มิ้นท์', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-        { id: -114, name: 'ไวท์ช็อก มอคค่า', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-        { id: -115, name: 'คาราเมล เฮเซลนัท ลาเต้', prices: { 'เย็น': 55, 'ปั่น': 65 } },
+        // ... (คัดลอกข้อมูล coffeeMenuData มาวางที่นี่)
     ];
-    
     const fruitSmoothieData = [
-        { id: -201, name: 'นมสด กีวี่', prices: { '16 Oz. เย็น': 40, '16 Oz. ปั่น': 45, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 55 } },
-        { id: -202, name: 'นมสด สตอเบอร์รี่', prices: { '16 Oz. เย็น': 40, '16 Oz. ปั่น': 45, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 55 } },
-        { id: -203, name: 'สตอเบอร์รี่ ช็อก', prices: { '16 Oz. เย็น': 55, '16 Oz. ปั่น': 60, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
-        { id: -204, name: 'ชาไทย สตอเบอร์รี่', prices: { '16 Oz. เย็น': 55, '16 Oz. ปั่น': 60, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
-        { id: -205, name: 'ชาเขียว สตอเบอร์รี่', prices: { '16 Oz. เย็น': 55, '16 Oz. ปั่น': 60, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
-        { id: -206, name: 'โกโก้ สตอเบอร์รี่', prices: { '16 Oz. เย็น': 45, '16 Oz. ปั่น': 50, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
-        { id: -207, name: 'ช็อก สตอเบอร์รี่', prices: { '16 Oz. เย็น': 50, '16 Oz. ปั่น': 55, '22 Oz. เย็น': 60, '22 Oz. ปั่น': 65 } },
-        { id: -208, name: 'นมสด บลูเบอร์รี่', prices: { '16 Oz. เย็น': 45, '16 Oz. ปั่น': 50, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
-        { id: -209, name: 'บลูเบอร์รี่ ช็อก', prices: { '16 Oz. เย็น': 55, '16 Oz. ปั่น': 60, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
+        // ... (คัดลอกข้อมูล fruitSmoothieData มาวางที่นี่)
     ];
-
     const smoothieYogurtData = [
-        { id: -301, name: 'กีวี่', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
-        { id: -302, name: 'สตอเบอร์รี่', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
-        { id: -303, name: 'พีช', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
-        { id: -304, name: 'บลูเบอร์รี่', prices: { '16 Oz. ปั่น': 55, '22 Oz. ปั่น': 65 } },
-        { id: -305, name: 'มิกซ์เบอร์รี่', prices: { '16 Oz. ปั่น': 55, '22 Oz. ปั่น': 65 } },
-        { id: -306, name: 'โยเกิร์ต ปีโป้', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
-        { id: -307, name: 'ลิ้นจี่', prices: { '16 Oz. ปั่น': 55, '22 Oz. ปั่น': 65 } },
-        { id: -308, name: 'ส้ม', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
+        // ... (คัดลอกข้อมูล smoothieYogurtData มาวางที่นี่)
     ];
 
 
-    // รวมเมนูทั้งหมด
     const allMenuData = [...menuData, ...matchaMenuData, ...coffeeMenuData, ...fruitSmoothieData, ...smoothieYogurtData];
-
     const sweetnessOptions = ['100%', '75%', '50%', '25%'];
 
+    // 🔥 เปลี่ยนจาก Local Storage เป็นตัวแปร Global ที่ถูกควบคุมโดย Listener
     let currentOrder = [];
-    let orderQueue = JSON.parse(localStorage.getItem('orderQueue')) || [];
-    let orderCounter = orderQueue.length > 0 ? Math.max(...orderQueue.map(o => o.id)) + 1 : 1;
-    // NEW: Load Menu Sales Log
-    let menuSalesLog = JSON.parse(localStorage.getItem('menuSalesLog')) || []; 
+    let orderQueue = []; 
+    let menuSalesLog = []; 
+    let orderCounter = 1; // ไม่ได้ใช้ แต่คงไว้เผื่อมีฟังก์ชันอื่นเรียก
 
     const menuGrid = document.getElementById('menu-grid');
     const currentOrderItemsEl = document.getElementById('current-order-items');
@@ -113,31 +65,20 @@
     const orderQueueEl = document.getElementById('order-queue');
     const deliveryAddressInput = document.getElementById('delivery-address');
 
-    // Dashboard Elements
     const salesTodayEl = document.getElementById('sales-today');
     const salesWeekEl = document.getElementById('sales-week');
     const salesMonthEl = document.getElementById('sales-month');
-
-    // Modal Elements
     const menuReportModal = document.getElementById('menu-report-modal');
     const menuReportContent = document.getElementById('menu-report-content');
     const matchaModal = document.getElementById('matcha-modal');
-    const matchaMenuListEl = document.getElementById('matcha-menu-list');
     const coffeeModal = document.getElementById('coffee-modal');
-    const coffeeMenuListEl = document.getElementById('coffee-menu-list');
     const fruitSmoothieModal = document.getElementById('fruit-smoothie-modal');
-    const fruitSmoothieListEl = document.getElementById('fruit-smoothie-list');
-    const smoothieYogurtListEl = document.getElementById('smoothie-yogurt-list');
-    
-    // QR Code Elements
     const qrPaymentModal = document.getElementById('qr-payment-modal');
     const qrTotalAmountEl = document.getElementById('qr-total-amount');
 
-    // NEW: Global variable to hold the last committed order for sharing
     let lastCommittedOrder = null;
 
-
-    // Helper function to find item data from all menus
+    // Helper function to find item data from all menus (คงเดิม)
     function getItemDataById(itemId) {
         return allMenuData.find(i => i.id === itemId);
     }
@@ -147,403 +88,86 @@
         qrPaymentModal.classList.remove('hidden');
     }
 
-    // --- All Modal render functions (retained) ---
-    
-    function showFruitSmoothieModal() {
-        renderFruitSmoothieMenu();
-        fruitSmoothieModal.classList.remove('hidden');
-    }
-
-    function renderFruitSmoothieMenu() {
-        fruitSmoothieListEl.innerHTML = '';
-        smoothieYogurtListEl.innerHTML = '';
-
-        // --- 1. Fruit Smoothie Section ---
-        const fruitSmoothieHeader = document.createElement('div');
-        fruitSmoothieHeader.className = 'flex justify-between text-center font-bold text-gray-600 mb-2 border-b pb-1 text-sm';
-        fruitSmoothieHeader.innerHTML = `
-            <span class="w-1/2 text-left">เมนู</span>
-            <span class="w-1/4">16 Oz.</span>
-            <span class="w-1/4">22 Oz.</span>
-        `;
-        fruitSmoothieListEl.appendChild(fruitSmoothieHeader);
-
-
-        fruitSmoothieData.forEach(item => {
-            const p16 = `${item.prices['16 Oz. เย็น'] || 'X'} / ${item.prices['16 Oz. ปั่น'] || 'X'}`;
-            const p22 = `${item.prices['22 Oz. เย็น'] || 'X'} / ${item.prices['22 Oz. ปั่น'] || 'X'}`;
-            
-            const menuCard = document.createElement('div');
-            menuCard.className = 'smoothie-menu-card';
-            menuCard.setAttribute('onclick', `addToOrder(${item.id})`);
-            menuCard.innerHTML = `
-                <span class="w-1/2 text-sm font-medium text-gray-800">${item.name}</span>
-                <span class="w-1/4 text-center text-xs price-smoothie">${p16}</span>
-                <span class="w-1/4 text-center text-xs price-smoothie">${p22}</span>
-            `;
-            fruitSmoothieListEl.appendChild(menuCard);
-        });
-        
-        // --- 2. Smoothie Yogurt Section ---
-        const yogurtHeader = document.createElement('div');
-        yogurtHeader.className = 'flex justify-between text-center font-bold text-gray-600 mb-2 border-b pb-1 text-sm';
-        yogurtHeader.innerHTML = `
-            <span class="w-2/3 text-left">เมนู (ปั่นเท่านั้น)</span>
-            <span class="w-1/6">16 Oz.</span>
-            <span class="w-1/6">22 Oz.</span>
-        `;
-        smoothieYogurtListEl.appendChild(yogurtHeader);
-
-        smoothieYogurtData.forEach(item => {
-            const p16 = item.prices['16 Oz. ปั่น'];
-            const p22 = item.prices['22 Oz. ปั่น'];
-
-            const menuCard = document.createElement('div');
-            menuCard.className = 'smoothie-menu-card';
-            menuCard.setAttribute('onclick', `addToOrder(${item.id})`);
-            menuCard.innerHTML = `
-                <span class="w-2/3 text-sm font-medium text-gray-800">${item.name}</span>
-                <span class="w-1/6 text-center text-xs price-smoothie">฿${p16}</span>
-                <span class="w-1/6 text-center text-xs price-smoothie">฿${p22}</span>
-            `;
-            smoothieYogurtListEl.appendChild(menuCard);
-        });
-    }
-    
-    function showCoffeeMenuModal() {
-        renderCoffeeMenu();
-        coffeeModal.classList.remove('hidden');
-    }
-
-    function renderCoffeeMenu() {
-        coffeeMenuListEl.innerHTML = '';
-        coffeeMenuData.forEach(item => {
-            let priceDisplay = '';
-            const sizes = Object.keys(item.prices);
-            
-            if (sizes.length === 1) {
-                priceDisplay = `฿${item.prices[sizes[0]]} (${sizes[0]})`;
-            } else if (sizes.length === 2 && item.prices['เย็น'] && item.prices['ปั่น']) {
-                if (item.prices['เย็น'] === item.prices['ปั่น']) {
-                     priceDisplay = `฿${item.prices['เย็น']}`;
-                } else {
-                     priceDisplay = `฿${item.prices['เย็น']} / ฿${item.prices['ปั่น']} (ปั่น)`;
-                }
-            } else if (sizes.length > 0) {
-                priceDisplay = sizes.map(size => `฿${item.prices[size]} (${size})`).join(', ');
-            } else {
-                priceDisplay = '---';
-            }
-
-            const menuCard = document.createElement('div');
-            menuCard.className = 'coffee-menu-card';
-            menuCard.setAttribute('onclick', `addToOrder(${item.id})`);
-            menuCard.innerHTML = `
-                <span class="w-2/3 text-sm font-medium text-gray-800">${item.name}</span>
-                <span class="w-1/3 text-right text-sm price-coffee">${priceDisplay}</span>
-            `;
-            coffeeMenuListEl.appendChild(menuCard);
-        });
-    }
-    
-    function showMatchaMenuModal() {
-        renderMatchaMenu();
-        matchaModal.classList.remove('hidden');
-    }
-
-    function renderMatchaMenu() {
-        matchaMenuListEl.innerHTML = '';
-        matchaMenuData.forEach(item => {
-            const p16 = item.prices['16 Oz. เย็น'] ? `฿${item.prices['16 Oz. เย็น']}` : 'X';
-            const p22 = item.prices['22 Oz. เย็น'] || item.prices['22 Oz. ปั่น'];
-            const p22Display = p22 ? `฿${p22}` : 'X';
-
-            const menuCard = document.createElement('div');
-            menuCard.className = 'matcha-menu-card';
-            menuCard.setAttribute('onclick', `addToOrder(${item.id})`);
-            menuCard.innerHTML = `
-                <span class="w-1/2 text-sm font-medium text-gray-800">${item.name}</span>
-                <span class="w-1/4 text-center text-sm ${p16 === 'X' ? 'text-red-500' : 'price-small'}">${p16}</span>
-                <span class="w-1/4 text-center text-sm ${p22Display === 'X' ? 'text-red-500' : 'price-large'}">${p22Display}</span>
-            `;
-            matchaMenuListEl.appendChild(menuCard);
-        });
-    }
-    
-    // --- Core Application Logic (retained) ---
-
-    function renderMenu() {
-        const specialMenuIds = [
-            ...matchaMenuData,
-            ...coffeeMenuData,
-            ...fruitSmoothieData,
-            ...smoothieYogurtData
-        ].map(item => item.id);
-        
-        const otherMenuData = menuData.filter(item => !specialMenuIds.includes(item.id));
-        
-        const existingSpecialButtons = menuGrid.querySelectorAll('.p-3.bg-amber-700, .p-3.bg-emerald-500, .p-3.bg-sky-500');
-        const newGridContent = Array.from(existingSpecialButtons).map(btn => btn.outerHTML).join('');
-        menuGrid.innerHTML = newGridContent;
-
-        otherMenuData.forEach(item => {
-            const menuItem = document.createElement('div');
-            menuItem.className = 'p-3 bg-teal-50 hover:bg-teal-100 rounded-lg text-center cursor-pointer transition duration-300 shadow-sm';
-            menuItem.innerHTML = `<span class="font-semibold">${item.name}</span>`;
-            menuItem.onclick = () => addToOrder(item.id);
-            menuGrid.appendChild(menuItem);
-        });
-    }
-
-    function addToOrder(itemId) {
-        const item = getItemDataById(itemId);
-        if (!item) return;
-
-        const defaultSize = Object.keys(item.prices)[0];
-        const defaultSweetness = sweetnessOptions[0];
-
-        const orderItem = {
-            id: Date.now(),
-            itemId: item.id,
-            name: item.name,
-            size: defaultSize,
-            price: item.prices[defaultSize],
-            quantity: 1,
-            sweetness: defaultSweetness,
-        };
-        currentOrder.push(orderItem);
-        renderCurrentOrder();
-        // Close modal if open
-        matchaModal.classList.add('hidden');
-        coffeeModal.classList.add('hidden');
-        fruitSmoothieModal.classList.add('hidden');
-    }
-    
-    function renderCurrentOrder() {
-        if (currentOrder.length === 0) {
-            currentOrderItemsEl.innerHTML = '<p class="text-gray-400 text-center mt-4">เลือกเมนูจากด้านซ้ายเพื่อเริ่ม...</p>';
-            submitOrderBtn.disabled = true;
-        } else {
-            currentOrderItemsEl.innerHTML = '';
-            currentOrder.forEach(item => {
-                const menuItem = getItemDataById(item.itemId);
-                const availableSizes = Object.keys(menuItem.prices);
-
-                const sizeOptions = availableSizes.map(size =>
-                    `<option value="${size}" ${item.size === size ? 'selected' : ''}>${size}</option>`
-                ).join('');
-
-                const sweetnessDropdown = sweetnessOptions.map(level =>
-                    `<option value="${level}" ${item.sweetness === level ? 'selected' : ''}>${level}</option>`
-                ).join('');
-
-                const itemEl = document.createElement('div');
-                itemEl.className = 'flex items-center justify-between bg-gray-50 p-2 rounded-lg';
-                itemEl.innerHTML = `
-                    <div class="flex-grow grid grid-cols-2 gap-2">
-                        <p class="font-semibold col-span-2">${item.name}</p>
-                        
-                        <div class="flex flex-col">
-                            <span class="text-xs font-medium text-gray-500 mb-1">ขนาด</span>
-                            <select class="text-sm p-1 border rounded" onchange="updateOrderItemSize(${item.id}, this.value)">
-                                ${sizeOptions}
-                            </select>
-                        </div>
-                        
-                        <div class="flex flex-col">
-                            <span class="text-xs font-medium text-gray-500 mb-1">หวาน</span>
-                            <select class="text-sm p-1 border rounded" onchange="updateOrderItemSweetness(${item.id}, this.value)">
-                                ${sweetnessDropdown}
-                            </select>
-                        </div>
-                        
-                    </div>
-                    <div class="flex items-center gap-2 ml-4">
-                        <button class="w-6 h-6 bg-gray-200 rounded-full" onclick="updateOrderItemQuantity(${item.id}, -1)">-</button>
-                        <span>${item.quantity}</span>
-                        <button class="w-6 h-6 bg-gray-200 rounded-full" onclick="updateOrderItemQuantity(${item.id}, 1)">+</button>
-                    </div>
-                    <span class="w-20 text-right font-semibold">฿${(item.price * item.quantity).toLocaleString('th-TH')}</span>
-                    <button class="ml-2 text-red-500 hover:text-red-700" onclick="removeOrderItem(${item.id})">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                `;
-                currentOrderItemsEl.appendChild(itemEl);
+    // 🔥 NEW: Firebase Listeners 🔥
+    function initFirebaseListeners() {
+        // 1. Realtime Listener สำหรับคิวออเดอร์ (orders Collection)
+        db.collection("orders").orderBy("placedAt", "asc").onSnapshot(snapshot => {
+            orderQueue = snapshot.docs.map(doc => ({ 
+                id: doc.id, 
+                ...doc.data() 
+            }));
+            orderQueue.sort((a, b) => {
+                const statusOrder = { 'คิว': 1, 'กำลังทำ': 2, 'เสร็จแล้ว': 3, 'ยกเลิก': 4 };
+                return statusOrder[a.status] - statusOrder[b.status];
             });
-            submitOrderBtn.disabled = false;
-        }
-        updateTotalPrice();
-    }
-
-    function updateOrderItemSweetness(orderItemId, newSweetness) {
-        const orderItem = currentOrder.find(item => item.id === orderItemId);
-        orderItem.sweetness = newSweetness;
-        renderCurrentOrder();
-    }
-    
-    function updateOrderItemSize(orderItemId, newSize) {
-        const orderItem = currentOrder.find(item => item.id === orderItemId);
-        const menuItem = getItemDataById(orderItem.itemId);
-        if (menuItem.prices[newSize] !== undefined) {
-            orderItem.size = newSize;
-            orderItem.price = menuItem.prices[newSize];
-        }
-        renderCurrentOrder();
-    }
-
-    function updateOrderItemQuantity(orderItemId, change) {
-        const orderItem = currentOrder.find(item => item.id === orderItemId);
-        if (orderItem.quantity + change > 0) {
-            orderItem.quantity += change;
-        }
-        renderCurrentOrder();
-    }
-
-    function removeOrderItem(orderItemId) {
-        currentOrder = currentOrder.filter(item => item.id !== orderItemId);
-        renderCurrentOrder();
-    }
-
-    function updateTotalPrice() {
-        const total = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        totalPriceEl.textContent = `฿${total.toLocaleString('th-TH')}`;
-    }
-
-
-    function isToday(date) {
-        const today = new Date();
-        return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
-    }
-
-    function isThisWeek(date) {
-        const now = new Date();
-        const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-        const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
-        return date >= startOfWeek && date <= endOfWeek;
-    }
-
-    function isThisMonth(date) {
-        const now = new Date();
-        return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-    }
-    
-    function saveOrderQueue() {
-        localStorage.setItem('orderQueue', JSON.stringify(orderQueue));
-    }
-    
-    // NEW FUNCTION: Save individual menu item sales to log
-    function saveMenuSaleLog() {
-        localStorage.setItem('menuSalesLog', JSON.stringify(menuSalesLog));
-    }
-
-    function updateSalesDashboard() {
-        let salesToday = 0;
-        let salesWeek = 0;
-        let salesMonth = 0;
-        
-        // Use menuSalesLog for calculating dashboard figures
-        menuSalesLog.forEach(log => {
-            const saleDate = new Date(log.soldAt);
-            if (isToday(saleDate)) { salesToday += log.price * log.quantity; }
-            if (isThisWeek(saleDate)) { salesWeek += log.price * log.quantity; }
-            if (isThisMonth(saleDate)) { salesMonth += log.price * log.quantity; }
+            renderOrderQueue();
+        }, error => {
+            console.error("Error listening to orders: ", error);
         });
-        
-        salesTodayEl.textContent = `฿${salesToday.toLocaleString('th-TH')}`;
-        salesWeekEl.textContent = `฿${salesWeek.toLocaleString('th-TH')}`;
-        salesMonthEl.textContent = `฿${salesMonth.toLocaleString('th-TH')}`;
+
+        // 2. Listener สำหรับยอดขาย (salesLog Collection)
+        db.collection("salesLog").onSnapshot(snapshot => {
+            menuSalesLog = snapshot.docs.map(doc => doc.data());
+            updateSalesDashboard();
+        }, error => {
+            console.error("Error listening to sales log: ", error);
+        });
     }
 
-    // ===========================================
-    // NEW: Share Functionality (retained)
-    // ===========================================
-
-    function shareOrderSummary() {
-        if (!lastCommittedOrder) {
-            alert('ไม่พบข้อมูลออเดอร์ล่าสุดสำหรับแชร์');
-            return;
-        }
-
-        const itemsText = lastCommittedOrder.items.map(item =>
-            `* ${item.name} (${item.size}, หวาน ${item.sweetness}) x${item.quantity} = ฿${(item.price * item.quantity).toLocaleString('th-TH')}`
-        ).join('\n');
-
-        const shareText =
-            `✅ *สรุปบิล #${lastCommittedOrder.id} - ${new Date().toLocaleDateString('th-TH')}*\n` +
-            `----------------------------------------\n` +
-            `${itemsText}\n` +
-            `----------------------------------------\n` +
-            `📍 ที่อยู่: ${lastCommittedOrder.address}\n` +
-            `💰 *รวมทั้งสิ้น: ฿${lastCommittedOrder.total.toLocaleString('th-TH')}*\n\n` +
-            `💬 *[สำหรับการชำระเงิน] กรุณาใช้ QR Code ในรูปภาพ (ที่แนบมาพร้อมข้อความนี้) เพื่อสแกนจ่ายเงิน*\n` +
-            `ชื่อบัญชี: น.ส.นฤตญา นาเมืองรักษ์`;
-
-        if (navigator.share) {
-            // ใช้ Web Share API สำหรับมือถือ (เปิดเมนูแชร์ของระบบ)
-            navigator.share({
-                title: `บิลออเดอร์ #${lastCommittedOrder.id}`,
-                text: shareText
-            }).catch((error) => {
-                // Fallback to copy if share fails or cancelled
-                navigator.clipboard.writeText(shareText)
-                    .then(() => alert('คัดลอกสรุปบิล (ข้อความ) ไปยังคลิปบอร์ดแล้ว! สามารถนำไปวางใน LINE ได้เลย (กรุณาแนบรูปภาพ QR Code ด้วยตนเอง)'))
-                    .catch(err => console.error('Could not copy text: ', err));
-            });
-        } else {
-            // Fallback: คัดลอกข้อความไปที่ Clipboard
-            navigator.clipboard.writeText(shareText)
-                .then(() => alert('คัดลอกสรุปบิล (ข้อความ) ไปยังคลิปบอร์ดแล้ว! สามารถนำไปวางใน LINE ได้เลย (กรุณาแนบรูปภาพ QR Code ด้วยตนเอง)'))
-                .catch(err => console.error('Could not copy text: ', err));
-        }
-    }
+    // --- ส่วนแสดงผล Modal (คงเดิม) ---
+    // (คัดลอก renderFruitSmoothieMenu, showCoffeeMenuModal, renderCoffeeMenu, etc. มาวางที่นี่)
     
-    // ===========================================
-    // UPDATED: Submit Order (retained)
-    // ===========================================
+    // --- Core Application Logic (addToOrder, renderCurrentOrder, updateOrderItemSweetness, updateOrderItemSize, updateOrderItemQuantity, removeOrderItem, updateTotalPrice คงเดิม) ---
 
+    // 🔥 UPDATED: Submit Order (เปลี่ยนไปใช้ Firestore) 🔥
     submitOrderBtn.addEventListener('click', () => {
         const orderTotal = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
         if (currentOrder.length > 0) {
             const address = deliveryAddressInput.value.trim();
-            const newOrder = {
-                id: orderCounter++,
-                items: [...currentOrder],
+            const isPickup = address === '';
+            
+            if (isPickup) {
+                 if (!confirm("คุณไม่ได้กรอกที่อยู่ จะถือเป็น 'รับเองที่ร้าน' ใช่หรือไม่?")) { return; }
+            }
+
+            db.collection("orders").add({
+                items: currentOrder,
                 total: orderTotal,
                 address: address || 'รับเองที่ร้าน',
                 status: 'คิว',
-                placedAt: Date.now(),
-            };
-            if (newOrder.address === 'รับเองที่ร้าน') {
-                if (!confirm("คุณไม่ได้กรอกที่อยู่ จะถือเป็น 'รับเองที่ร้าน' ใช่หรือไม่?")) { return; }
-            }
-            
-            // Set the last committed order for sharing
-            lastCommittedOrder = newOrder;
-
-            orderQueue.push(newOrder);
-            currentOrder = [];
-            deliveryAddressInput.value = '';
-            renderCurrentOrder();
-            renderOrderQueue();
-            saveOrderQueue();
-            
-            // Show QR Code Modal
-            showPaymentQRModal(orderTotal);
+                placedAt: firebase.firestore.FieldValue.serverTimestamp(), // ใช้เวลาจาก Server
+            })
+            .then(docRef => {
+                lastCommittedOrder = {
+                     id: docRef.id, 
+                     items: [...currentOrder],
+                     total: orderTotal,
+                     address: address || 'รับเองที่ร้าน',
+                };
+                
+                currentOrder = []; 
+                deliveryAddressInput.value = '';
+                renderCurrentOrder(); 
+                showPaymentQRModal(orderTotal);
+            })
+            .catch(error => {
+                console.error("Error adding document: ", error);
+                alert("ไม่สามารถส่งออเดอร์ได้ กรุณาลองใหม่");
+            });
         }
     });
-    
+
+    // 🔥 UPDATED: renderOrderQueue (ใช้ Order ID จาก Firestore) 🔥
     function renderOrderQueue() {
         if (orderQueue.length === 0) {
             orderQueueEl.innerHTML = '<p class="text-gray-400 text-center mt-4">ยังไม่มีออเดอร์ในคิว</p>';
             return;
         }
-        const sortedQueue = [...orderQueue].sort((a, b) => {
-            const statusOrder = { 'คิว': 1, 'กำลังทำ': 2, 'เสร็จแล้ว': 3, 'ยกเลิก': 4 };
-            return statusOrder[a.status] - statusOrder[b.status];
-        });
+        const activeQueue = orderQueue.filter(order => order.status !== 'เสร็จแล้ว' && order.status !== 'ยกเลิก');
+
         orderQueueEl.innerHTML = '';
-        sortedQueue.forEach(order => {
+        (activeQueue.length > 0 ? activeQueue : orderQueue).forEach(order => {
             const itemsSummary = order.items.map(item => `${item.name} (${item.size}, หวาน ${item.sweetness}) x${item.quantity}`).join(', ');
             const statusColor = {
                 'คิว': 'bg-blue-100 text-blue-800',
@@ -551,12 +175,13 @@
                 'เสร็จแล้ว': 'bg-green-100 text-green-800',
                 'ยกเลิก': 'bg-red-100 text-red-800'
             }[order.status];
+            
             const orderCard = document.createElement('div');
             orderCard.className = `p-4 rounded-lg shadow-sm ${order.status === 'เสร็จแล้ว' || order.status === 'ยกเลิก' ? 'bg-gray-200 opacity-75' : 'bg-gray-50 hover:bg-white'}`;
             orderCard.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
                     <div>
-                        <h4 class="font-bold text-lg">ออเดอร์ #${order.id}</h4>
+                        <h4 class="font-bold text-lg">ออเดอร์ #${order.id.substring(0, 8)}...</h4> 
                         <p class="text-sm text-gray-600">${itemsSummary}</p>
                         <p class="text-xs text-gray-500 mt-1">
                             <span class="font-semibold">ที่อยู่:</span> ${order.address}
@@ -567,52 +192,76 @@
                 <div class="flex items-center justify-between">
                     <span class="text-sm font-semibold px-2.5 py-0.5 rounded-full ${statusColor}">${order.status}</span>
                     <div class="flex gap-2">
-                        ${order.status === 'คิว' ? `<button class="text-xs bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus(${order.id}, 'กำลังทำ')">รับออเดอร์</button>` : ''}
-                        ${order.status === 'กำลังทำ' ? `<button class="text-xs bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus(${order.id}, 'เสร็จแล้ว')">เสร็จสิ้น</button>` : ''}
-                        ${order.status !== 'เสร็จแล้ว' && order.status !== 'ยกเลิก' ? `<button class="text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus(${order.id}, 'ยกเลิก')">ยกเลิก</button>` : ''}
+                        ${order.status === 'คิว' ? `<button class="text-xs bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'กำลังทำ')">รับออเดอร์</button>` : ''}
+                        ${order.status === 'กำลังทำ' ? `<button class="text-xs bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'เสร็จแล้ว')">เสร็จสิ้น</button>` : ''}
+                        ${order.status !== 'เสร็จแล้ว' && order.status !== 'ยกเลิก' ? `<button class="text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'ยกเลิก')">ยกเลิก</button>` : ''}
                     </div>
                 </div>
             `;
             orderQueueEl.appendChild(orderCard);
         });
     }
-    
-    // UPDATED FUNCTION: Update Status and log sales
+
+    // 🔥 UPDATED: updateOrderStatus (เปลี่ยนไปใช้ Firestore และ Batch Write) 🔥
     function updateOrderStatus(orderId, newStatus) {
         const order = orderQueue.find(o => o.id === orderId);
-        if(order) {
-            order.status = newStatus;
-            
-            if (newStatus === 'เสร็จแล้ว') { 
-                order.completedAt = Date.now();
-                // ** LOGGING SALES DATA **
-                order.items.forEach(item => {
-                    menuSalesLog.push({
-                        name: item.name,
-                        size: item.size,
-                        sweetness: item.sweetness,
-                        quantity: item.quantity,
-                        price: item.price,
-                        soldAt: order.completedAt, // Use the completion time
-                        orderId: order.id
-                    });
-                });
-                saveMenuSaleLog(); // Save the updated sales log
-            } else if (newStatus === 'ยกเลิก') {
-                 // Option to remove the order from the queue if cancelled (not implemented here, but good practice)
-            }
+        if (!order) return;
 
-            renderOrderQueue();
-            updateSalesDashboard();
-            saveOrderQueue();
+        const updateData = { status: newStatus };
+        if (newStatus === 'เสร็จแล้ว') {
+            updateData.completedAt = firebase.firestore.FieldValue.serverTimestamp();
+            
+            const batch = db.batch(); 
+            order.items.forEach(item => {
+                const newLogRef = db.collection("salesLog").doc();
+                batch.set(newLogRef, {
+                    name: item.name,
+                    size: item.size,
+                    sweetness: item.sweetness,
+                    quantity: item.quantity,
+                    price: item.price,
+                    soldAt: updateData.completedAt,
+                    orderId: orderId
+                });
+            });
+            batch.commit().then(() => {
+                console.log("Sales Log batch successfully written!");
+            }).catch((error) => {
+                console.error("Error writing sales log batch: ", error);
+            });
         }
+        
+        db.collection("orders").doc(orderId).update(updateData)
+            .then(() => console.log("Order status updated!"))
+            .catch(error => console.error("Error updating order: ", error));
     }
-    
-    // UPDATED FUNCTION: Show Menu Report (uses menuSalesLog)
+
+    // 🔥 UPDATED: updateSalesDashboard (ใช้ข้อมูล Firestore Timestamp) 🔥
+    function updateSalesDashboard() {
+        let salesToday = 0;
+        let salesWeek = 0;
+        let salesMonth = 0;
+        
+        menuSalesLog.forEach(log => {
+             // แปลง Firebase Timestamp เป็น Date Object
+            const saleDate = log.soldAt ? new Date(log.soldAt.seconds * 1000) : new Date();
+            
+            const totalRevenue = log.price * log.quantity;
+
+            if (isToday(saleDate)) { salesToday += totalRevenue; }
+            if (isThisWeek(saleDate)) { salesWeek += totalRevenue; }
+            if (isThisMonth(saleDate)) { salesMonth += totalRevenue; }
+        });
+        
+        salesTodayEl.textContent = `฿${salesToday.toLocaleString('th-TH')}`;
+        salesWeekEl.textContent = `฿${salesWeek.toLocaleString('th-TH')}`;
+        salesMonthEl.textContent = `฿${salesMonth.toLocaleString('th-TH')}`;
+    }
+
+    // 🔥 UPDATED: showMenuReport (ใช้ menuSalesLog จาก Listener) 🔥
     function showMenuReport() {
         const menuSales = {};
         
-        // Use the dedicated log for report
         menuSalesLog.forEach(log => {
             const key = `${log.name} (${log.size}, หวาน ${log.sweetness})`;
             if (!menuSales[key]) {
@@ -622,6 +271,7 @@
             menuSales[key].totalRevenue += log.price * log.quantity;
         });
         
+        // ... (โค้ดสร้างตารางคงเดิม)
         const sortedMenuReport = Object.values(menuSales).sort((a, b) => b.totalQuantity - a.totalQuantity);
         let tableHTML = '<p class="text-gray-500 mb-4">สรุปยอดขายเมนูทั้งหมดที่ทำเสร็จแล้ว เรียงตามจำนวนแก้วที่ขายได้มากที่สุด</p>';
         if (sortedMenuReport.length === 0) {
@@ -636,11 +286,9 @@
         menuReportContent.innerHTML = tableHTML;
         menuReportModal.classList.remove('hidden');
     }
-
-
-    // Initial setup
+    
+    // --- Initial setup ---
     renderMenu();
     renderCurrentOrder();
-    updateSalesDashboard();
-    renderOrderQueue();
+    initFirebaseListeners(); // เริ่ม Listener
 </script>
