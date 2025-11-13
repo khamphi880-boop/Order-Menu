@@ -160,18 +160,7 @@
                 </div>
         </div>
     </div>
-
-    <div id="matcha-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
-        <div class="bg-white rounded-lg p-6 shadow-xl w-11/12 max-w-lg">
-            <div class="flex justify-between items-center border-b pb-3 mb-4">
-                <h3 class="text-2xl font-bold text-emerald-600">🍵 เมนูชาเขียว/มัทฉะ (GREEN TEA)</h3>
-                <button onclick="document.getElementById('matcha-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div id="matcha-menu-list" class="space-y-2 h-96 overflow-y-auto pr-2"></div>
-        </div>
-    </div>
+    
     <div id="qr-payment-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
         <div class="bg-white rounded-lg p-8 shadow-xl text-center w-11/12 max-w-sm">
             <h3 class="text-2xl font-bold text-teal-600 mb-2">Krungthai THAI QR PAYMENT</h3>
@@ -380,7 +369,6 @@
 
         // 🔥 Firebase Realtime Listeners (ใช้ Query 2 ชั้น) 🔥
         function initFirebaseListeners() {
-            // 1. Realtime Listener สำหรับคิวออเดอร์ (orders Collection)
             // ใช้ "orders" (ตัวเล็ก)
             db.collection("orders") 
                 .orderBy("status", "asc") 
@@ -411,65 +399,65 @@
         function renderMenu() {
             menuGrid.innerHTML = ''; // Clear existing grid
             
-            // เมนูทั้งหมดที่ต้องแสดง
+            // 1. รวมเมนูทั้งหมดและกำหนด Group/Color
             const allItemsForDisplay = [
-                // 1. เมนูหลัก (จาก menuData)
+                // เมนูหลัก (Milk/Tea/Chocolate)
                 ...menuData.map(item => ({...item, group: 'milk_tea', color: 'bg-teal-50 hover:bg-teal-100'})),
-                // 2. เมนูมัทฉะ (จาก matchaMenuData) - เลือกเฉพาะตัวที่มี 16oz และ 22oz เย็น
-                ...matchaMenuData.filter(i => i.prices['16 Oz. เย็น'] && i.prices['22 Oz. เย็น']).map(item => ({...item, group: 'matcha', color: 'bg-emerald-50 hover:bg-emerald-100'})),
-                // 3. เมนูกาแฟ (จาก coffeeMenuData) - เลือกเฉพาะตัวที่มี 'เย็น' และ 'ปั่น'
-                ...coffeeMenuData.filter(i => i.prices['เย็น'] && i.prices['ปั่น']).map(item => ({...item, group: 'coffee', color: 'bg-amber-50 hover:bg-amber-100'})),
-                // 4. เมนูสมูทตี้โยเกิร์ต (จาก smoothieYogurtData) - เลือกเฉพาะตัวที่มี '16 Oz. ปั่น'
-                ...smoothieYogurtData.filter(i => i.prices['16 Oz. ปั่น']).map(item => ({...item, group: 'yogurt', color: 'bg-sky-50 hover:bg-sky-100'})),
+                // เมนูมัทฉะ (Matcha)
+                ...matchaMenuData.map(item => ({...item, group: 'matcha', color: 'bg-emerald-50 hover:bg-emerald-100'})),
+                // เมนูกาแฟ (Coffee)
+                ...coffeeMenuData.map(item => ({...item, group: 'coffee', color: 'bg-amber-50 hover:bg-amber-100'})),
+                // เมนูสมูทตี้ผลไม้ (Fruit Smoothie)
+                ...fruitSmoothieData.map(item => ({...item, group: 'fruit_smoothie', color: 'bg-sky-50 hover:bg-sky-100'})),
+                // เมนูสมูทตี้โยเกิร์ต (Smoothie Yogurt)
+                ...smoothieYogurtData.map(item => ({...item, group: 'yogurt', color: 'bg-indigo-50 hover:bg-indigo-100'})),
             ];
 
 
-            // Group the items for display (for better visual grouping if needed, but here we just list them)
+            // 2. วนลูปสร้างปุ่มเมนูย่อยทั้งหมด
             allItemsForDisplay.forEach(item => {
                 const availableSizes = Object.keys(item.prices);
                 
-                // --- Logic for generating buttons based on available sizes ---
                 availableSizes.forEach(size => {
                     const price = item.prices[size];
                     let sizeLabel = '';
                     let colorClass = item.color;
 
                     if (size.includes('Oz.')) {
-                        sizeLabel = size.replace('Oz.','');
+                        // Special handling for 16 Oz. / 22 Oz. / 22 Oz. เย็น / 22 Oz. ปั่น
+                        sizeLabel = size.replace('Oz.', '');
                     } else if (size === 'เย็น' || size === 'ปั่น') {
+                        // Special handling for Coffee (size: เย็น, ปั่น)
                         sizeLabel = size;
-                        // For coffee, adjust color slightly for clear separation
                         if (item.group === 'coffee') {
                              colorClass = size === 'เย็น' ? 'bg-amber-50 hover:bg-amber-100' : 'bg-amber-100 hover:bg-amber-200';
                         }
                     } else {
+                        // Other sizes (if any)
                         sizeLabel = size;
                     }
-
-                    // For items with many sizes (like Milk/Tea), we default to smallest size button 
-                    // and let user change later if it's not a smoothie/coffee
                     
+                    // ปรับชื่อเมนูให้สั้นลง
+                    let shortName = item.name;
+                    if (item.group === 'coffee' || item.group === 'matcha') {
+                        shortName = shortName.replace('อเมริกาโน่', 'อเม').replace('มัทฉะลาเต้', 'มัทฉะ ลต.');
+                    }
+
+
                     const menuItem = document.createElement('div');
                     menuItem.className = `main-menu-card ${colorClass}`;
 
-                    // NEW FUNCTION CALL: Pass itemId, default size, and price directly
-                    menuItem.setAttribute('onclick', `addToOrder(${item.id}, '${size}', ${price})`);
+                    // NEW FUNCTION CALL: Pass itemId, size, and price directly
+                    // Note: Escaping string variables for JS call is crucial
+                    menuItem.setAttribute('onclick', `addToOrder(${item.id}, '${size.replace(/'/g, "\\'")}', ${price})`);
 
                     menuItem.innerHTML = `
-                        <p class="menu-name">${item.name}</p>
-                        <p class="text-gray-500 text-xs">${sizeLabel}</p>
+                        <p class="menu-name">${item.name} <span class="text-gray-500 font-normal">(${sizeLabel})</span></p>
                         <p class="menu-price-tag text-teal-600">฿${price.toLocaleString('th-TH')}</p>
                     `;
                     menuGrid.appendChild(menuItem);
                 });
             });
-
-            // *Special case: Fruit Smoothie can be complex. You might add a single button to open modal here if needed.*
-            const smoothieModalButton = document.createElement('div');
-            smoothieModalButton.className = 'p-3 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-lg text-center cursor-pointer transition duration-300 shadow-lg';
-            smoothieModalButton.setAttribute('onclick', 'showFruitSmoothieModal()');
-            smoothieModalButton.innerHTML = `<span class="font-semibold">🍓 เมนูสมูทตี้ผลไม้/โยเกิร์ต</span><p class="text-xs mt-1">คลิกเพื่อเลือกแบบซับซ้อน</p>`;
-            menuGrid.appendChild(smoothieModalButton);
         }
 
         // 🔥 UPDATED: addToOrder function to accept size and price directly 🔥
@@ -490,17 +478,19 @@
 
             const defaultSweetness = sweetnessOptions[0];
 
+            // 2. Create the new order item object
             const orderItem = {
                 id: Date.now(),
                 itemId: item.id,
                 name: item.name,
-                size: finalSize, // Use determined size
-                price: finalPrice, // Use determined price
+                size: finalSize, 
+                price: finalPrice, 
                 quantity: 1,
                 sweetness: defaultSweetness,
             };
             
-            // 2. Check if item already exists in current order (for stacking)
+            // 3. Check if item already exists in current order (for stacking)
+            // Use only name/size/sweetness to check for stacking (price should be the same if others match)
             const existingItemIndex = currentOrder.findIndex(
                 i => i.itemId === itemId && i.size === finalSize && i.sweetness === defaultSweetness
             );
@@ -513,6 +503,7 @@
                 currentOrder.push(orderItem);
             }
             
+            // 4. Re-render the cart
             renderCurrentOrder();
             // Close any open modals
             document.getElementById('matcha-modal').classList.add('hidden');
@@ -520,7 +511,7 @@
             document.getElementById('fruit-smoothie-modal').classList.add('hidden');
         }
         
-        // --- Other functions remain the same (initFirebaseListeners, submitOrderBtn, etc.) ---
+        // --- The rest of the functions remain the same as the previous correct version ---
 
         function renderCurrentOrder() {
             if (currentOrder.length === 0) {
@@ -703,12 +694,7 @@
 
         // 🔥 UPDATED: renderOrderQueue (ใช้ Order ID จาก Firestore และกรองสถานะ) 🔥
         function renderOrderQueue() {
-            // NOTE: The previous logic that filtered completed/canceled orders is now removed
-            // to ensure ALL orders (including status='เสร็จแล้ว') appear in the queue container
-            // to prevent the "empty queue" flicker when transitioning statuses.
-            
             const displayQueue = orderQueue.filter(order => order.status !== 'เสร็จแล้ว' && order.status !== 'ยกเลิก');
-
 
             if (displayQueue.length === 0) {
                 orderQueueEl.innerHTML = '<p class="text-gray-400 text-center mt-4">ยังไม่มีออเดอร์ในคิว</p>';
@@ -835,13 +821,10 @@
             menuReportModal.classList.remove('hidden');
         }
 
-        // --- Modals (retained as empty wrappers) ---
-        function showFruitSmoothieModal() {
-            // Function to handle complex smoothie menu if needed later
-            const smoothieYogurtListEl = document.getElementById('smoothie-yogurt-list');
-            smoothieYogurtListEl.innerHTML = '<p class="text-gray-500 text-center py-4">เมนูสมูทตี้ที่ซับซ้อน จะถูกแสดงที่นี่เมื่อเปิดใช้งาน</p>';
-            document.getElementById('fruit-smoothie-modal').classList.remove('hidden');
-        }
+        // --- Modals (Empty functions since all menus are on the main grid now) ---
+        function showMatchaMenuModal() { /* Empty */ }
+        function showCoffeeMenuModal() { /* Empty */ }
+        function showFruitSmoothieModal() { /* Empty */ }
         
         // --- Initial setup ---
         renderMenu();
