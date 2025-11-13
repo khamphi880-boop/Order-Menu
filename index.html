@@ -401,13 +401,26 @@
         
         // Function to create a simple menu button
         function createMenuItemButton(item, size, price, colorClass) {
-            const sizeLabel = size.replace('Oz.', '');
+            // Logic to clean up size label for display below the name
+            let sizeLabel = size;
+            if (size.includes('Oz.')) {
+                sizeLabel = size.replace('Oz.', 'ออนซ์'); 
+                sizeLabel = sizeLabel.replace('16', '16').replace('22', '22');
+            } else if (size === 'เย็น' || size === 'ปั่น') {
+                sizeLabel = size;
+            } else {
+                sizeLabel = size;
+            }
+            
             const menuItem = document.createElement('div');
             menuItem.className = `main-menu-card ${colorClass}`;
+            // NEW FUNCTION CALL: Pass itemId, size, and price directly
             menuItem.setAttribute('onclick', `addToOrder(${item.id}, '${size.replace(/'/g, "\\'")}', ${price})`);
 
+            // *** แก้ไข: ลบวงเล็บและขนาดออกจากบรรทัดชื่อเมนู (item.name) ***
             menuItem.innerHTML = `
-                <p class="menu-name">${item.name} <span class="text-gray-500 font-normal">(${sizeLabel})</span></p>
+                <p class="menu-name">${item.name}</p>
+                <p class="text-gray-500 text-xs">${sizeLabel}</p>
                 <p class="menu-price-tag text-teal-600">฿${price.toLocaleString('th-TH')}</p>
             `;
             return menuItem;
@@ -435,6 +448,11 @@
         function toggleCategory(containerId) {
             const container = document.getElementById(containerId);
             container.classList.toggle('hidden');
+            
+            // Optional: rotate arrow icon (for visual feedback)
+            const btn = document.querySelector(`#${containerId}`).previousElementSibling;
+            const arrow = btn.querySelector('svg');
+            arrow.classList.toggle('rotate-180');
         }
 
         function renderMenu() {
