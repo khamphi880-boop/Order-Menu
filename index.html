@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>สั่งน้ำ (Firebase)</title>
+    <title>สั่งน้ำคลิก (Firebase)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kanit:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -17,34 +17,7 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
-        /* Style for custom menu card in Modal (retained) */
-        .matcha-menu-card, .coffee-menu-card, .smoothie-menu-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        .matcha-menu-card { background-color: #f0fdf4; }
-        .matcha-menu-card:hover { background-color: #dcfce7; }
-        .coffee-menu-card { background-color: #fcf8f3; }
-        .coffee-menu-card:hover { background-color: #fbede3; }
-        .smoothie-menu-card { background-color: #f0f9ff; }
-        .smoothie-menu-card:hover { background-color: #e0f2fe; }
-        .price-small { color: #10b981; font-weight: 500; }
-        .price-large { color: #059669; font-weight: 700; }
-        .price-coffee { color: #7c2d12; font-weight: 700; }
-        .price-smoothie { color: #0284c7; font-weight: 700; }
         
-        /* QR Image Container Style */
-        .qr-image-container {
-            width: 256px;
-            height: 256px;
-            margin: 0 auto;
-        }
-
         /* NEW Style for menu buttons on the main grid */
         .main-menu-card {
             padding: 0.5rem;
@@ -67,6 +40,36 @@
         .menu-price-tag {
             font-weight: 700;
             font-size: 0.8rem;
+        }
+
+        /* Style for Category Toggle Buttons */
+        .category-toggle-btn {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            font-weight: bold;
+            color: white;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: opacity 0.3s;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        
+        /* Style for container that holds menu items */
+        .menu-container-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr)); /* Use grid for sub-menus */
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        /* QR Image Container Style */
+        .qr-image-container {
+            width: 256px;
+            height: 256px;
+            margin: 0 auto;
         }
     </style>
 </head>
@@ -103,7 +106,7 @@
             <div class="bg-white p-6 rounded-2xl shadow-lg">
                 <h2 class="text-2xl font-semibold mb-4 border-b pb-2">เมนูเครื่องดื่ม</h2>
                 
-                <div id="menu-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4 h-[60vh] overflow-y-auto no-scrollbar pr-2">
+                <div id="menu-grid" class="h-[60vh] overflow-y-auto no-scrollbar pr-2 space-y-3">
                     </div>
             </div>
 
@@ -202,10 +205,10 @@
     <script>
         // 2. โค้ด Configuration ของโปรเจกต์คุณ (ใช้ค่าเดิม)
         const firebaseConfig = {
-            apiKey: "AIzaSyDztPWzAu8Lz8olg_dhlCLBQVEyjTQqpOk",
-            authDomain: "ordermanagement-f6724.firebaseapp.com",
-            projectId: "ordermanagement-f6724",
-            storageBucket: "ordermanagement-f6724.appspot.com",
+            apiKey: "AIzaSyDztPWzAu8Lz8olg_dhlCLBQVEyjTQqpOk", //
+            authDomain: "ordermanagement-f6724.firebaseapp.com", //
+            projectId: "ordermanagement-f6724", //
+            storageBucket: "ordermanagement-f6724.appspot.com", //
             messagingSenderId: "321286666597",
             appId: "1:321286666597:web:062fef7df8fc456fec098c",
         };
@@ -396,70 +399,78 @@
         
         // --- Core Application Logic (ปรับปรุงเพื่อรองรับการเพิ่มจากหน้าหลัก) ---
         
-        function renderMenu() {
-            menuGrid.innerHTML = ''; // Clear existing grid
+        // Function to create a simple menu button
+        function createMenuItemButton(item, size, price, colorClass) {
+            const sizeLabel = size.replace('Oz.', '');
+            const menuItem = document.createElement('div');
+            menuItem.className = `main-menu-card ${colorClass}`;
+            menuItem.setAttribute('onclick', `addToOrder(${item.id}, '${size.replace(/'/g, "\\'")}', ${price})`);
+
+            menuItem.innerHTML = `
+                <p class="menu-name">${item.name} <span class="text-gray-500 font-normal">(${sizeLabel})</span></p>
+                <p class="menu-price-tag text-teal-600">฿${price.toLocaleString('th-TH')}</p>
+            `;
+            return menuItem;
+        }
+
+        // NEW: Function to render specific category menus
+        function renderCategoryMenu(categoryName, menuData, colorClass, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
             
-            // 1. รวมเมนูทั้งหมดและกำหนด Group/Color
-            const allItemsForDisplay = [
-                // เมนูหลัก (Milk/Tea/Chocolate)
-                ...menuData.map(item => ({...item, group: 'milk_tea', color: 'bg-teal-50 hover:bg-teal-100'})),
-                // เมนูมัทฉะ (Matcha)
-                ...matchaMenuData.map(item => ({...item, group: 'matcha', color: 'bg-emerald-50 hover:bg-emerald-100'})),
-                // เมนูกาแฟ (Coffee)
-                ...coffeeMenuData.map(item => ({...item, group: 'coffee', color: 'bg-amber-50 hover:bg-amber-100'})),
-                // เมนูสมูทตี้ผลไม้ (Fruit Smoothie)
-                ...fruitSmoothieData.map(item => ({...item, group: 'fruit_smoothie', color: 'bg-sky-50 hover:bg-sky-100'})),
-                // เมนูสมูทตี้โยเกิร์ต (Smoothie Yogurt)
-                ...smoothieYogurtData.map(item => ({...item, group: 'yogurt', color: 'bg-indigo-50 hover:bg-indigo-100'})),
-            ];
-
-
-            // 2. วนลูปสร้างปุ่มเมนูย่อยทั้งหมด
-            allItemsForDisplay.forEach(item => {
+            // Logic to determine which sizes/options to show as separate buttons for this category
+            menuData.forEach(item => {
                 const availableSizes = Object.keys(item.prices);
                 
                 availableSizes.forEach(size => {
                     const price = item.prices[size];
-                    let sizeLabel = '';
-                    let colorClass = item.color;
-
-                    if (size.includes('Oz.')) {
-                        // Special handling for 16 Oz. / 22 Oz. / 22 Oz. เย็น / 22 Oz. ปั่น
-                        sizeLabel = size.replace('Oz.', '');
-                    } else if (size === 'เย็น' || size === 'ปั่น') {
-                        // Special handling for Coffee (size: เย็น, ปั่น)
-                        sizeLabel = size;
-                        if (item.group === 'coffee') {
-                             colorClass = size === 'เย็น' ? 'bg-amber-50 hover:bg-amber-100' : 'bg-amber-100 hover:bg-amber-200';
-                        }
-                    } else {
-                        // Other sizes (if any)
-                        sizeLabel = size;
-                    }
-                    
-                    // ปรับชื่อเมนูให้สั้นลง
-                    let shortName = item.name;
-                    if (item.group === 'coffee' || item.group === 'matcha') {
-                        shortName = shortName.replace('อเมริกาโน่', 'อเม').replace('มัทฉะลาเต้', 'มัทฉะ ลต.');
-                    }
-
-
-                    const menuItem = document.createElement('div');
-                    menuItem.className = `main-menu-card ${colorClass}`;
-
-                    // NEW FUNCTION CALL: Pass itemId, size, and price directly
-                    // Note: Escaping string variables for JS call is crucial
-                    menuItem.setAttribute('onclick', `addToOrder(${item.id}, '${size.replace(/'/g, "\\'")}', ${price})`);
-
-                    menuItem.innerHTML = `
-                        <p class="menu-name">${item.name} <span class="text-gray-500 font-normal">(${sizeLabel})</span></p>
-                        <p class="menu-price-tag text-teal-600">฿${price.toLocaleString('th-TH')}</p>
-                    `;
-                    menuGrid.appendChild(menuItem);
+                    const button = createMenuItemButton(item, size, price, colorClass);
+                    container.appendChild(button);
                 });
             });
         }
 
+
+        // Function to handle the category toggle
+        function toggleCategory(containerId) {
+            const container = document.getElementById(containerId);
+            container.classList.toggle('hidden');
+        }
+
+        function renderMenu() {
+            menuGrid.innerHTML = ''; // Clear existing grid
+            
+            // Define Categories
+            const categories = [
+                { title: '🥛 นม/ชา/โกโก้ (Standard)', data: menuData, color: 'bg-teal-500 hover:bg-teal-600', colorClass: 'bg-teal-50 hover:bg-teal-100', containerId: 'menu-standard' },
+                { title: '🍵 เมนูมัทฉะ/ชาเขียว', data: matchaMenuData, color: 'bg-emerald-500 hover:bg-emerald-600', colorClass: 'bg-emerald-50 hover:bg-emerald-100', containerId: 'menu-matcha' },
+                { title: '☕ เมนูกาแฟ (COFFEE)', data: coffeeMenuData, color: 'bg-amber-700 hover:bg-amber-800', colorClass: 'bg-amber-50 hover:bg-amber-100', containerId: 'menu-coffee' },
+                { title: '🍓 สมูทตี้ผลไม้ (Fruit)', data: fruitSmoothieData, color: 'bg-sky-500 hover:bg-sky-600', colorClass: 'bg-sky-50 hover:bg-sky-100', containerId: 'menu-fruit' },
+                { title: '🍇 สมูทตี้โยเกิร์ต (Yogurt)', data: smoothieYogurtData, color: 'bg-indigo-500 hover:bg-indigo-600', colorClass: 'bg-indigo-50 hover:bg-indigo-100', containerId: 'menu-yogurt' },
+            ];
+
+            categories.forEach(category => {
+                // 1. Create the Toggle Button
+                const toggleBtn = document.createElement('div');
+                toggleBtn.className = `category-toggle-btn ${category.color}`;
+                toggleBtn.setAttribute('onclick', `toggleCategory('${category.containerId}')`);
+                toggleBtn.innerHTML = `
+                    <span>${category.title}</span>
+                    <svg class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                `;
+                menuGrid.appendChild(toggleBtn);
+
+                // 2. Create the Menu Container (hidden by default)
+                const menuContainer = document.createElement('div');
+                menuContainer.id = category.containerId;
+                menuContainer.className = 'menu-container-grid hidden'; // Starts hidden
+                menuGrid.appendChild(menuContainer);
+
+                // 3. Populate the container with individual menu items (buttons)
+                renderCategoryMenu(category.title, category.data, category.colorClass, category.containerId);
+            });
+        }
+        
         // 🔥 UPDATED: addToOrder function to accept size and price directly 🔥
         function addToOrder(itemId, size = null, price = null) {
             const item = getItemDataById(itemId);
@@ -470,7 +481,7 @@
             let finalPrice = price;
 
             if (finalSize === null || finalPrice === null) {
-                // Fallback to the first available size if size/price are not passed (e.g., from an old button)
+                // Fallback to the first available size if size/price are not passed
                 const defaultSize = Object.keys(item.prices)[0];
                 finalSize = defaultSize;
                 finalPrice = item.prices[defaultSize];
@@ -490,7 +501,6 @@
             };
             
             // 3. Check if item already exists in current order (for stacking)
-            // Use only name/size/sweetness to check for stacking (price should be the same if others match)
             const existingItemIndex = currentOrder.findIndex(
                 i => i.itemId === itemId && i.size === finalSize && i.sweetness === defaultSweetness
             );
@@ -505,10 +515,6 @@
             
             // 4. Re-render the cart
             renderCurrentOrder();
-            // Close any open modals
-            document.getElementById('matcha-modal').classList.add('hidden');
-            document.getElementById('coffee-modal').classList.add('hidden');
-            document.getElementById('fruit-smoothie-modal').classList.add('hidden');
         }
         
         // --- The rest of the functions remain the same as the previous correct version ---
@@ -665,7 +671,7 @@
                      if (!confirm("คุณไม่ได้กรอกที่อยู่ จะถือเป็น 'รับเองที่ร้าน' ใช่หรือไม่?")) { return; }
                 }
 
-                db.collection("orders").add({
+                db.collection("orders").add({ // ใช้ "orders" ตัวเล็ก
                     items: currentOrder,
                     total: orderTotal,
                     address: address || 'รับเองที่ร้าน',
@@ -821,11 +827,6 @@
             menuReportModal.classList.remove('hidden');
         }
 
-        // --- Modals (Empty functions since all menus are on the main grid now) ---
-        function showMatchaMenuModal() { /* Empty */ }
-        function showCoffeeMenuModal() { /* Empty */ }
-        function showFruitSmoothieModal() { /* Empty */ }
-        
         // --- Initial setup ---
         renderMenu();
         renderCurrentOrder();
@@ -833,4 +834,3 @@
     </script>
 </body>
 </html>
-
