@@ -1,891 +1,891 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบจัดการออเดอร์ (Firebase)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kanit:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Kanit', sans-serif;
-        }
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        /* Style for custom menu card in Modal (retained) */
-        .matcha-menu-card, .coffee-menu-card, .smoothie-menu-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        .matcha-menu-card { background-color: #f0fdf4; }
-        .matcha-menu-card:hover { background-color: #dcfce7; }
-        .coffee-menu-card { background-color: #fcf8f3; }
-        .coffee-menu-card:hover { background-color: #fbede3; }
-        .smoothie-menu-card { background-color: #f0f9ff; }
-        .smoothie-menu-card:hover { background-color: #e0f2fe; }
-        .price-small { color: #10b981; font-weight: 500; }
-        .price-large { color: #059669; font-weight: 700; }
-        .price-coffee { color: #7c2d12; font-weight: 700; }
-        .price-smoothie { color: #0284c7; font-weight: 700; }
-        
-        /* QR Image Container Style */
-        .qr-image-container {
-            width: 256px;
-            height: 256px;
-            margin: 0 auto;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการออเดอร์ (Firebase)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kanit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Style for custom menu card in Modal (retained) */
+        .matcha-menu-card, .coffee-menu-card, .smoothie-menu-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .matcha-menu-card { background-color: #f0fdf4; }
+        .matcha-menu-card:hover { background-color: #dcfce7; }
+        .coffee-menu-card { background-color: #fcf8f3; }
+        .coffee-menu-card:hover { background-color: #fbede3; }
+        .smoothie-menu-card { background-color: #f0f9ff; }
+        .smoothie-menu-card:hover { background-color: #e0f2fe; }
+        .price-small { color: #10b981; font-weight: 500; }
+        .price-large { color: #059669; font-weight: 700; }
+        .price-coffee { color: #7c2d12; font-weight: 700; }
+        .price-smoothie { color: #0284c7; font-weight: 700; }
+        
+        /* QR Image Container Style */
+        .qr-image-container {
+            width: 256px;
+            height: 256px;
+            margin: 0 auto;
+        }
+    </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <div class="container mx-auto p-4 max-w-7xl">
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-teal-600">ระบบจัดการออเดอร์</h1>
-            <p class="text-gray-500">ใช้ Firebase Firestore สำหรับจัดการคิวแบบ Realtime</p>
-        </header>
-
-        <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
-            <h2 class="text-2xl font-semibold mb-4 border-b pb-2">📊 แดชบอร์ดสรุปยอดขาย</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-4">
-                <div class="bg-blue-50 p-4 rounded-xl">
-                    <p class="text-sm text-blue-600 font-medium">ยอดขายวันนี้</p>
-                    <p id="sales-today" class="text-3xl font-bold text-blue-800">฿0</p>
-                </div>
-                <div class="bg-green-50 p-4 rounded-xl">
-                    <p class="text-sm text-green-600 font-medium">ยอดขายสัปดาห์นี้</p>
-                    <p id="sales-week" class="text-3xl font-bold text-green-800">฿0</p>
-                </div>
-                <div class="bg-purple-50 p-4 rounded-xl">
-                    <p class="text-sm text-purple-600 font-medium">ยอดขายเดือนนี้</p>
-                    <p id="sales-month" class="text-3xl font-bold text-purple-800">฿0</p>
-                </div>
-            </div>
-            
-            <button onclick="showMenuReport()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
-                ⭐ ดูรายงานเมนูที่ขายดี
-            </button>
-        </div>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="bg-white p-6 rounded-2xl shadow-lg">
-                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">เมนูเครื่องดื่ม</h2>
-                <div id="menu-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4 h-[60vh] overflow-y-auto no-scrollbar pr-2">
-                    
-                    <div class="p-3 bg-amber-700 hover:bg-amber-800 text-white font-bold rounded-lg text-center cursor-pointer transition duration-300 shadow-lg" onclick="showCoffeeMenuModal()">
-                        <span class="font-semibold">☕ เมนูกาแฟ (COFFEE)</span>
-                        <p class="text-xs mt-1">คลิกเพื่อเลือก</p>
-                    </div>
-
-                    <div class="p-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-center cursor-pointer transition duration-300 shadow-lg" onclick="showMatchaMenuModal()">
-                        <span class="font-semibold">🍵 เมนูมัทฉะ/ชาเขียว</span>
-                        <p class="text-xs mt-1">คลิกเพื่อเลือก</p>
-                    </div>
-                    
-                    <div class="p-3 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-lg text-center cursor-pointer transition duration-300 shadow-lg" onclick="showFruitSmoothieModal()">
-                        <span class="font-semibold">🍓 เมนูสมูทตี้ผลไม้/โยเกิร์ต</span>
-                        <p class="text-xs mt-1">คลิกเพื่อเลือก</p>
-                    </div>
-
-                </div>
-            </div>
-
-            <div class="flex flex-col gap-8">
-                <div class="bg-white p-6 rounded-2xl shadow-lg flex-grow flex flex-col">
-                    <h2 class="text-2xl font-semibold mb-4 border-b pb-2">ออเดอร์ปัจจุบัน</h2>
-                    <div id="current-order-items" class="flex-grow space-y-2 overflow-y-auto no-scrollbar pr-2 mb-4 min-h-[150px]">
-                        <p class="text-gray-400 text-center mt-4">เลือกเมนูจากด้านซ้ายเพื่อเริ่ม...</p>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label for="delivery-address" class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่จัดส่ง (Delivery Address)</label>
-                        <textarea id="delivery-address" rows="3" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="กรอกรายละเอียดที่อยู่จัดส่งที่นี่"></textarea>
-                    </div>
-                    
-                    <div class="border-t pt-4">
-                        <div class="flex justify-between items-center text-xl font-bold mb-4">
-                            <span>รวมทั้งหมด:</span>
-                            <span id="total-price" class="text-teal-600">฿0</span>
-                        </div>
-                        <button id="submit-order-btn" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-gray-300">
-                            ส่งออเดอร์
-                        </button>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-lg">
-                    <h2 class="text-2xl font-semibold mb-4 border-b pb-2">คิวออเดอร์</h2>
-                    <div id="order-queue" class="space-y-4 h-[25vh] overflow-y-auto no-scrollbar pr-2">
-                            <p class="text-gray-400 text-center mt-4">กำลังโหลดคิวจาก Firebase...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
-        <div class="bg-white rounded-lg p-8 shadow-xl text-center">
-            <svg class="w-16 h-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            <h3 class="text-2xl font-semibold mb-2">สำเร็จ!</h3>
-            <p class="text-gray-600" id="modal-message"></p>
-        </div>
-    </div>
-
-    <div id="menu-report-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
-        <div class="bg-white rounded-lg p-6 shadow-xl w-11/12 max-w-2xl">
-            <div class="flex justify-between items-center border-b pb-3 mb-4">
-                <h3 class="text-2xl font-semibold text-teal-600">⭐ รายงานเมนูที่ขายดี</h3>
-                <button onclick="document.getElementById('menu-report-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div id="menu-report-content" class="h-96 overflow-y-auto">
-                </div>
-        </div>
-    </div>
-
-    <div id="matcha-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
-        <div class="bg-white rounded-lg p-6 shadow-xl w-11/12 max-w-lg">
-            <div class="flex justify-between items-center border-b pb-3 mb-4">
-                <h3 class="text-2xl font-bold text-emerald-600">🍵 เมนูชาเขียว/มัทฉะ (GREEN TEA)</h3>
-                <button onclick="document.getElementById('matcha-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div class="flex justify-between text-center font-bold text-gray-600 mb-2">
-                <span class="w-1/2 text-left">เมนู</span>
-                <span class="w-1/4">16 Oz.</span>
-                <span class="w-1/4">22 Oz.</span>
-            </div>
-            <div id="matcha-menu-list" class="space-y-2 h-96 overflow-y-auto pr-2">
-                </div>
-        </div>
-    </div>
-
-    <div id="coffee-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
-        <div class="bg-white rounded-lg p-6 shadow-xl w-11/12 max-w-lg">
-            <div class="flex justify-between items-center border-b pb-3 mb-4">
-                <h3 class="text-2xl font-bold text-amber-700">☕ เมนูกาแฟ (COFFEE)</h3>
-                <button onclick="document.getElementById('coffee-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div class="flex justify-between text-center font-bold text-gray-600 mb-2">
-                <span class="w-2/3 text-left">เมนู</span>
-                <span class="w-1/3 text-right">ราคา (฿)</span>
-            </div>
-            <div id="coffee-menu-list" class="space-y-2 h-96 overflow-y-auto pr-2">
-                </div>
-        </div>
-    </div>
-    
-    <div id="fruit-smoothie-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
-        <div class="bg-white rounded-lg p-6 shadow-xl w-11/12 max-w-lg">
-            <div class="flex justify-between items-center border-b pb-3 mb-4">
-                <h3 class="text-2xl font-bold text-sky-600">🍓 เมนูสมูทตี้ผลไม้/โยเกิร์ต</h3>
-                <button onclick="document.getElementById('fruit-smoothie-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div class="text-sm text-gray-500 mb-2">
-                <p class="font-bold text-sky-700">Fruit Smoothie (ผลไม้ปั่น)</p>
-            </div>
-            <div id="fruit-smoothie-list" class="space-y-2 mb-4 border-b pb-4">
-                </div>
-
-            <div class="text-sm text-gray-500 mb-2">
-                <p class="font-bold text-sky-700">Smoothie Yogurt (สมูทตี้โยเกิร์ต)</p>
-            </div>
-            <div id="smoothie-yogurt-list" class="space-y-2 h-64 overflow-y-auto pr-2">
-                </div>
-
-        </div>
-        </div>
-    
-    <div id="qr-payment-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
-        <div class="bg-white rounded-lg p-8 shadow-xl text-center w-11/12 max-w-sm">
-            <h3 class="text-2xl font-bold text-teal-600 mb-2">Krungthai THAI QR PAYMENT</h3>
-            <p class="text-xl font-medium text-gray-800 mb-3">ยอดรวม: <span id="qr-total-amount" class="text-red-600 font-extrabold">฿0</span></p>
-            
-            <div class="flex justify-center flex-col items-center p-2 bg-white border border-gray-100 rounded-xl shadow-lg mb-4">
-                
-                <div class="qr-image-container my-4">
-                    <img src="https://raw.githubusercontent.com/khamphi880-boop/Order-Menu/c9af72f12e59972d1bed7b54fc7ab6831bd56952/176464.jpg" 
-                            alt="Krungthai PromptPay QR Code" 
-                            class="w-full h-full object-contain mx-auto">
-                </div>
-                
-                <div class="w-full p-2 border-t pt-2">
-                    <p class="text-base text-gray-700 font-semibold">
-                        ชื่อบัญชี: <span class="font-bold text-gray-900">น.ส.นฤตญา นาเมืองรักษ์</span>
-                    </p>
-                </div>
-            </div>
-
-            <p class="text-sm text-red-500 mt-2">
-                *ยอดจะถูกกำหนดโดยอัตโนมัติ (กรุณายืนยันการชำระเงินกับพนักงาน)
-            </p>
-
-            <button onclick="shareOrderSummary()" class="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-lg flex items-center justify-center space-x-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.882 13.791 9 14.271 9 14.75c0 1.282-.622 2.45-1.608 3.018l-3.376 1.948A2.5 2.5 0 011 19.5V4.5a2.5 2.5 0 014.016-1.948l3.376 1.948A4.5 4.5 0 019 9.25c0 .479-.118.958-.316 1.407M16 12a4 4 0 100-8 4 4 0 000 8zM18 16a4 4 0 100-8 4 4 0 000 8z"></path></svg>
-                <span>แชร์สรุปบิล (LINE, อื่นๆ)</span>
-            </button>
-            
-            <button onclick="document.getElementById('qr-payment-modal').classList.add('hidden')" class="mt-3 w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 rounded-lg">
-                ยืนยันการรับชำระเงิน
-            </button>
-        </div>
-    </div>
-
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script> 
-
-    <script>
-        // 2. โค้ด Configuration ของโปรเจกต์คุณ
-        // !!! ATTENTION !!!: ต้องเปลี่ยนค่าเหล่านี้เป็นค่าของโปรเจกต์คุณ
-        const firebaseConfig = {
-            apiKey: "AIzaSyDztPWzAu8Lz8olg_dhlCLBQVEyjTQqpOk", // <--- REPLACE
-            authDomain: "ordermanagement-f6724.firebaseapp.com", // <--- REPLACE
-            projectId: "ordermanagement-f6724", // <--- REPLACE
-            storageBucket: "ordermanagement-f6724.appspot.com", // <--- REPLACE (ใช้ .appspot.com)
-            messagingSenderId: "321286666597",
-            appId: "1:321286666597:web:062fef7df8fc456fec098c",
-        };
-
-        // 3. Initialize App และ Firestore
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        
-        // ====================================================================
-        // 📝 START: โค้ด JavaScript ระบบจัดการออเดอร์ (ปรับเป็น Firebase) 📝
-        // ====================================================================
-
-        // *** Menu Data (Full lists) ***
-        const menuData = [
-            { id: 1, name: 'เผือก', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 2, name: 'แคนตาลูป', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 3, name: 'นมสด', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 4, name: 'นมน้ำผึ้ง', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 5, name: 'นมวานิลลา', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 6, name: 'นมคาราเมล', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 7, name: 'นมเย็น/นมชมพู', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 8, name: 'นมบราวน์ชูการ์', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 9, name: 'นมสด งาดำ', prices: { '16 Oz.': 35, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 50 } },
-            { id: 10, name: 'นมมิ้นท์', prices: { '16 Oz.': 35, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 50 } },
-            { id: 11, name: 'โกโก้', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 12, name: 'นมมิ้นท์โกโก้', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 13, name: 'ช็อกโกแลต', prices: { '16 Oz.': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
-            { id: 14, name: 'นมมิ้นท์ช็อก', prices: { '16 Oz.': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
-            { id: 15, name: 'นมสดโอริโอ้', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 60 } },
-            { id: 16, name: 'นมกล้วย', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 60 } },
-            { id: 17, name: 'กล้วยช็อก', prices: { '16 Oz.': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
-            { id: 18, name: 'กล้วยโกโก้', prices: { '16 Oz.': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
-            { id: 19, name: 'มะพร้าวนมสด', prices: { '22 Oz. ปั่น': 55 } },
-            { id: 20, name: 'ชาไทย (ไต้หวัน)', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 21, name: 'ชาไทย (ใบชา)', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 22, name: 'ชาไทย ลาเต้ มะพร้าว', prices: { '16 Oz.': 45, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
-            { id: 23, name: 'ชาเขียว (ไม่กลิ่นมะลิ)', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 24, name: 'ชาเขียวลาเต้ มะพร้าว', prices: { '16 Oz.': 45, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
-            { id: 25, name: 'ชาเขียวมะนาว', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 26, name: 'ชามะนาว', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 27, name: 'ชาพีช', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 28, name: 'ชามะลิ', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 29, name: 'ชาลิ้นจี่', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-        ];
-        
-        const matchaMenuData = [
-            { id: -1, name: 'เพียวมัทฉะ', prices: { '16 Oz. เย็น': 40, '22 Oz. เย็น': 40 } },
-            { id: -2, name: 'เพียวมัทฉะ น้ำผึ้ง', prices: { '16 Oz. เย็น': 40, '22 Oz. เย็น': 40 } },
-            { id: -3, name: 'เพียวมัทฉะ วานิลลา', prices: { '16 Oz. เย็น': 40, '22 Oz. เย็น': 40 } },
-            { id: -4, name: 'เพียวมัทฉะ คาราเมล', prices: { '16 Oz. เย็น': 40, '22 Oz. เย็น': 40 } },
-            { id: -5, name: 'เพียวมัทฉะ มะพร้าว', prices: { '16 Oz. เย็น': 50, '22 Oz. เย็น': 60 } },
-            { id: -6, name: 'เพียวมัทฉะ น้ำส้ม', prices: { '16 Oz. เย็น': 50, '22 Oz. เย็น': 60 } },
-            { id: -7, name: 'มัทฉะลาเต้', prices: { '16 Oz. เย็น': 45, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
-            { id: -8, name: 'มัทฉะลาเต้ โอริโอ้', prices: { '16 Oz. เย็น': 55, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
-            { id: -9, name: 'มัทฉะลาเต้ คาราเมล', prices: { '16 Oz. เย็น': 50, '22 Oz. เย็น': 60, '22 Oz. ปั่น': 65 } },
-            { id: -10, name: 'มัทฉะลาเต้ มะพร้าวสด', prices: { '16 Oz. เย็น': 55, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
-            { id: -11, name: 'มัทฉะลาเต้ วานิลลา', prices: { '16 Oz. เย็น': 50, '22 Oz. เย็น': 60, '22 Oz. ปั่น': 65 } },
-            { id: -12, name: 'มัทฉะลาเต้ สตอเบอร์รี่', prices: { '16 Oz. เย็น': 55, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
-            { id: -13, name: 'มัทฉะลาเต้ บลูเบอร์รี่', prices: { '16 Oz. เย็น': 55, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
-            { id: -14, name: 'มัทฉะลาเต้ น้ำผึ้ง', prices: { '16 Oz. เย็น': 50, '22 Oz. เย็น': 60, '22 Oz. ปั่น': 65 } },
-            { id: -15, name: 'มัทฉะ อเมริกาโน่', prices: { '16 Oz. เย็น': 60, '22 Oz. เย็น': 70 } },
-            { id: -16, name: 'มัทฉะลาเต้ คอฟฟี่', prices: { '16 Oz. เย็น': 60, '22 Oz. เย็น': 70 } },
-            { id: -17, name: 'มัทฉะลาเต้ ถั่วแดง', prices: { '16 Oz. เย็น': 55, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
-            { id: -18, name: 'มัทฉะ ถั่วแดง (ปั่น)', prices: { '22 Oz. ปั่น': 70 } },
-        ];
-        
-        const coffeeMenuData = [
-            { id: -101, name: 'อเมริกาโน่', prices: { 'เย็น': 45, 'ปั่น': 55 } },
-            { id: -102, name: 'อเมริกาโน่ น้ำผึ้ง', prices: { 'เย็น': 50, 'ปั่น': 60 } },
-            { id: -103, name: 'อเมริกาโน่ มะพร้าว', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-            { id: -104, name: 'อเมริกาโน่ น้ำส้ม', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-            { id: -105, name: 'เอสเปรสโซ่', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-            { id: -106, name: 'ลาเต้', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-            { id: -107, name: 'ลาเต้ มะพร้าว นมสด', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-            { id: -108, name: 'วานิลลา ลาเต้', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-            { id: -109, name: 'คาปูชิโน่', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-            { id: -110, name: 'มอคค่า', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-            { id: -111, name: 'คาราเมล มัคคิอาโต้', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-            { id: -112, name: 'เฮเซลนัท ลาเต้', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-            { id: -113, name: 'มอคค่า มิ้นท์', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-            { id: -114, name: 'ไวท์ช็อก มอคค่า', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-            { id: -115, name: 'คาราเมล เฮเซลนัท ลาเต้', prices: { 'เย็น': 55, 'ปั่น': 65 } },
-        ];
-        
-        const fruitSmoothieData = [
-            { id: -201, name: 'นมสด กีวี่', prices: { '16 Oz. เย็น': 40, '16 Oz. ปั่น': 45, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 55 } },
-            { id: -202, name: 'นมสด สตอเบอร์รี่', prices: { '16 Oz. เย็น': 40, '16 Oz. ปั่น': 45, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 55 } },
-            { id: -203, name: 'สตอเบอร์รี่ ช็อก', prices: { '16 Oz. เย็น': 55, '16 Oz. ปั่น': 60, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
-            { id: -204, name: 'ชาไทย สตอเบอร์รี่', prices: { '16 Oz. เย็น': 55, '16 Oz. ปั่น': 60, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
-            { id: -205, name: 'ชาเขียว สตอเบอร์รี่', prices: { '16 Oz. เย็น': 55, '16 Oz. ปั่น': 60, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
-            { id: -206, name: 'โกโก้ สตอเบอร์รี่', prices: { '16 Oz. เย็น': 45, '16 Oz. ปั่น': 50, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
-            { id: -207, name: 'ช็อก สตอเบอร์รี่', prices: { '16 Oz. เย็น': 50, '16 Oz. ปั่น': 55, '22 Oz. เย็น': 60, '22 Oz. ปั่น': 65 } },
-            { id: -208, name: 'นมสด บลูเบอร์รี่', prices: { '16 Oz. เย็น': 45, '16 Oz. ปั่น': 50, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
-            { id: -209, name: 'บลูเบอร์รี่ ช็อก', prices: { '16 Oz. เย็น': 55, '16 Oz. ปั่น': 60, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
-        ];
-
-        const smoothieYogurtData = [
-            { id: -301, name: 'กีวี่', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
-            { id: -302, name: 'สตอเบอร์รี่', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
-            { id: -303, name: 'พีช', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
-            { id: -304, name: 'บลูเบอร์รี่', prices: { '16 Oz. ปั่น': 55, '22 Oz. ปั่น': 65 } },
-            { id: -305, name: 'มิกซ์เบอร์รี่', prices: { '16 Oz. ปั่น': 55, '22 Oz. ปั่น': 65 } },
-            { id: -306, name: 'โยเกิร์ต ปีโป้', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
-            { id: -307, name: 'ลิ้นจี่', prices: { '16 Oz. ปั่น': 55, '22 Oz. ปั่น': 65 } },
-            { id: -308, name: 'ส้ม', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
-        ];
-
-        // รวมเมนูทั้งหมด
-        const allMenuData = [...menuData, ...matchaMenuData, ...coffeeMenuData, ...fruitSmoothieData, ...smoothieYogurtData];
-        const sweetnessOptions = ['100%', '75%', '50%', '25%'];
-
-        // 🔥 Firebase Global Variables 🔥
-        let currentOrder = [];
-        let orderQueue = []; 
-        let menuSalesLog = []; 
-
-        const menuGrid = document.getElementById('menu-grid');
-        const currentOrderItemsEl = document.getElementById('current-order-items');
-        const totalPriceEl = document.getElementById('total-price');
-        const submitOrderBtn = document.getElementById('submit-order-btn');
-        const orderQueueEl = document.getElementById('order-queue');
-        const deliveryAddressInput = document.getElementById('delivery-address');
-
-        const salesTodayEl = document.getElementById('sales-today');
-        const salesWeekEl = document.getElementById('sales-week');
-        const salesMonthEl = document.getElementById('sales-month');
-        const menuReportModal = document.getElementById('menu-report-modal');
-        const menuReportContent = document.getElementById('menu-report-content');
-        const qrPaymentModal = document.getElementById('qr-payment-modal');
-        const qrTotalAmountEl = document.getElementById('qr-total-amount');
-
-        let lastCommittedOrder = null;
-
-        // Helper function to find item data from all menus (คงเดิม)
-        function getItemDataById(itemId) {
-            return allMenuData.find(i => i.id === itemId);
-        }
-        
-        function showPaymentQRModal(orderTotal) {
-            qrTotalAmountEl.textContent = `฿${orderTotal.toLocaleString('th-TH')}`;
-            qrPaymentModal.classList.remove('hidden');
-        }
-
-        // --- Date Helper Functions (คงเดิม) ---
-        function isToday(date) {
-            const today = new Date();
-            return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
-        }
-
-        function isThisWeek(date) {
-            const now = new Date();
-            const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-            const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
-            return date >= startOfWeek && date <= endOfWeek;
-        }
-
-        function isThisMonth(date) {
-            const now = new Date();
-            return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-        }
-
-       // 🔥 Firebase Realtime Listeners (ใช้ Query 2 ชั้น) 🔥
-function initFirebaseListeners() {
-    // 1. Realtime Listener สำหรับคิวออเดอร์ (Orders Collection)
-    // *** แก้ไขตรงนี้: เปลี่ยนจาก "orders" เป็น "Orders" ***
-    db.collection("Orders") 
-        .orderBy("status", "asc") 
-        .orderBy("placedAt", "asc") 
-        .onSnapshot(snapshot => { 
-            orderQueue = snapshot.docs.map(doc => ({ 
-                id: doc.id, 
-                ...doc.data() 
-            }));
-            
-            renderOrderQueue();
-        }, error => {
-            console.error("Firebase Order Listener Error:", error);
-            orderQueueEl.innerHTML = '<p class="text-red-500 text-center mt-4 font-bold">⚠️ ERROR: ไม่สามารถเชื่อมต่อฐานข้อมูลได้ (โปรดตรวจสอบ Console/Rules/Index)</p>';
-        });
-
-    // 2. Listener สำหรับยอดขาย (salesLog Collection)
-    db.collection("salesLog").onSnapshot(snapshot => {
-        menuSalesLog = snapshot.docs.map(doc => doc.data());
-        updateSalesDashboard();
-    }, error => {
-        console.error("Firebase Sales Listener Error:", error);
-    });
-} 
-        // --- Modal Render Functions (นำโค้ดกลับมา) ---
-        
-        function showMatchaMenuModal() {
-            renderMatchaMenu();
-            document.getElementById('matcha-modal').classList.remove('hidden');
-        }
-
-        function renderMatchaMenu() {
-            const matchaMenuListEl = document.getElementById('matcha-menu-list');
-            matchaMenuListEl.innerHTML = '';
-            matchaMenuData.forEach(item => {
-                const p16 = item.prices['16 Oz. เย็น'] ? `฿${item.prices['16 Oz. เย็น']}` : 'X';
-                const p22 = item.prices['22 Oz. เย็น'] || item.prices['22 Oz. ปั่น'];
-                const p22Display = p22 ? `฿${p22}` : 'X';
-
-                const menuCard = document.createElement('div');
-                menuCard.className = 'matcha-menu-card';
-                menuCard.setAttribute('onclick', `addToOrder(${item.id})`);
-                menuCard.innerHTML = `
-                    <span class="w-1/2 text-sm font-medium text-gray-800">${item.name}</span>
-                    <span class="w-1/4 text-center text-sm ${p16 === 'X' ? 'text-red-500' : 'price-small'}">${p16}</span>
-                    <span class="w-1/4 text-center text-sm ${p22Display === 'X' ? 'text-red-500' : 'price-large'}">${p22Display}</span>
-                `;
-                matchaMenuListEl.appendChild(menuCard);
-            });
-        }
-        
-        function showCoffeeMenuModal() {
-            renderCoffeeMenu();
-            document.getElementById('coffee-modal').classList.remove('hidden');
-        }
-
-        function renderCoffeeMenu() {
-            const coffeeMenuListEl = document.getElementById('coffee-menu-list');
-            coffeeMenuListEl.innerHTML = '';
-            coffeeMenuData.forEach(item => {
-                let priceDisplay = '';
-                const sizes = Object.keys(item.prices);
-                
-                if (sizes.length === 1) {
-                    priceDisplay = `฿${item.prices[sizes[0]]} (${sizes[0]})`;
-                } else if (sizes.length === 2 && item.prices['เย็น'] && item.prices['ปั่น']) {
-                    if (item.prices['เย็น'] === item.prices['ปั่น']) {
-                        priceDisplay = `฿${item.prices['เย็น']}`;
-                    } else {
-                        priceDisplay = `฿${item.prices['เย็น']} / ฿${item.prices['ปั่น']} (ปั่น)`;
-                    }
-                } else if (sizes.length > 0) {
-                    priceDisplay = sizes.map(size => `฿${item.prices[size]} (${size})`).join(', ');
-                } else {
-                    priceDisplay = '---';
-                }
-
-                const menuCard = document.createElement('div');
-                menuCard.className = 'coffee-menu-card';
-                menuCard.setAttribute('onclick', `addToOrder(${item.id})`);
-                menuCard.innerHTML = `
-                    <span class="w-2/3 text-sm font-medium text-gray-800">${item.name}</span>
-                    <span class="w-1/3 text-right text-sm price-coffee">${priceDisplay}</span>
-                `;
-                coffeeMenuListEl.appendChild(menuCard);
-            });
-        }
-        
-        function showFruitSmoothieModal() {
-            renderFruitSmoothieMenu();
-            document.getElementById('fruit-smoothie-modal').classList.remove('hidden');
-        }
-
-        function renderFruitSmoothieMenu() {
-            const fruitSmoothieListEl = document.getElementById('fruit-smoothie-list');
-            const smoothieYogurtListEl = document.getElementById('smoothie-yogurt-list');
-            
-            fruitSmoothieListEl.innerHTML = '';
-            smoothieYogurtListEl.innerHTML = '';
-
-            // --- 1. Fruit Smoothie Section ---
-            const fruitSmoothieHeader = document.createElement('div');
-            fruitSmoothieHeader.className = 'flex justify-between text-center font-bold text-gray-600 mb-2 border-b pb-1 text-sm';
-            fruitSmoothieHeader.innerHTML = `<span class="w-1/2 text-left">เมนู</span><span class="w-1/4">16 Oz.</span><span class="w-1/4">22 Oz.</span>`;
-            fruitSmoothieListEl.appendChild(fruitSmoothieHeader);
-
-            fruitSmoothieData.forEach(item => {
-                const p16 = `${item.prices['16 Oz. เย็น'] || 'X'} / ${item.prices['16 Oz. ปั่น'] || 'X'}`;
-                const p22 = `${item.prices['22 Oz. เย็น'] || 'X'} / ${item.prices['22 Oz. ปั่น'] || 'X'}`;
-                const menuCard = document.createElement('div');
-                menuCard.className = 'smoothie-menu-card';
-                menuCard.setAttribute('onclick', `addToOrder(${item.id})`);
-                menuCard.innerHTML = `<span class="w-1/2 text-sm font-medium text-gray-800">${item.name}</span><span class="w-1/4 text-center text-xs price-smoothie">${p16}</span><span class="w-1/4 text-center text-xs price-smoothie">${p22}</span>`;
-                fruitSmoothieListEl.appendChild(menuCard);
-            });
-            
-            // --- 2. Smoothie Yogurt Section ---
-            const yogurtHeader = document.createElement('div');
-            yogurtHeader.className = 'flex justify-between text-center font-bold text-gray-600 mb-2 border-b pb-1 text-sm';
-            yogurtHeader.innerHTML = `<span class="w-2/3 text-left">เมนู (ปั่นเท่านั้น)</span><span class="w-1/6">16 Oz.</span><span class="w-1/6">22 Oz.</span>`;
-            smoothieYogurtListEl.appendChild(yogurtHeader);
-
-            smoothieYogurtData.forEach(item => {
-                const p16 = item.prices['16 Oz. ปั่น'];
-                const p22 = item.prices['22 Oz. ปั่น'];
-                const menuCard = document.createElement('div');
-                menuCard.className = 'smoothie-menu-card';
-                menuCard.setAttribute('onclick', `addToOrder(${item.id})`);
-                menuCard.innerHTML = `<span class="w-2/3 text-sm font-medium text-gray-800">${item.name}</span><span class="w-1/6 text-center text-xs price-smoothie">฿${p16}</span><span class="w-1/6 text-center text-xs price-smoothie">฿${p22}</span>`;
-                smoothieYogurtListEl.appendChild(menuCard);
-            });
-        }
-
-
-        // --- Core Application Logic (โค้ดที่เหลือ) ---
-        // (ส่วนนี้ต่อเนื่องจากโค้ดด้านบน)
-        
-        function renderMenu() {
-             const specialMenuIds = [...matchaMenuData, ...coffeeMenuData, ...fruitSmoothieData, ...smoothieYogurtData].map(item => item.id);
-            const otherMenuData = menuData.filter(item => !specialMenuIds.includes(item.id));
-            
-            const existingSpecialButtons = menuGrid.querySelectorAll('.p-3.bg-amber-700, .p-3.bg-emerald-500, .p-3.bg-sky-500');
-            const newGridContent = Array.from(existingSpecialButtons).map(btn => btn.outerHTML).join('');
-            menuGrid.innerHTML = newGridContent;
-
-            otherMenuData.forEach(item => {
-                const menuItem = document.createElement('div');
-                menuItem.className = 'p-3 bg-teal-50 hover:bg-teal-100 rounded-lg text-center cursor-pointer transition duration-300 shadow-sm';
-                menuItem.innerHTML = `<span class="font-semibold">${item.name}</span>`;
-                menuItem.onclick = () => addToOrder(item.id);
-                menuGrid.appendChild(menuItem);
-            });
-        }
-
-        function addToOrder(itemId) {
-            const item = getItemDataById(itemId);
-            if (!item) return;
-
-            const defaultSize = Object.keys(item.prices)[0];
-            const defaultSweetness = sweetnessOptions[0];
-
-            const orderItem = {
-                id: Date.now(),
-                itemId: item.id,
-                name: item.name,
-                size: defaultSize,
-                price: item.prices[defaultSize],
-                quantity: 1,
-                sweetness: defaultSweetness,
-            };
-            currentOrder.push(orderItem);
-            renderCurrentOrder();
-            document.getElementById('matcha-modal').classList.add('hidden');
-            document.getElementById('coffee-modal').classList.add('hidden');
-            document.getElementById('fruit-smoothie-modal').classList.add('hidden');
-        }
-        
-        function renderCurrentOrder() {
-            if (currentOrder.length === 0) {
-                currentOrderItemsEl.innerHTML = '<p class="text-gray-400 text-center mt-4">เลือกเมนูจากด้านซ้ายเพื่อเริ่ม...</p>';
-                submitOrderBtn.disabled = true;
-            } else {
-                currentOrderItemsEl.innerHTML = '';
-                currentOrder.forEach(item => {
-                    const menuItem = getItemDataById(item.itemId);
-                    const availableSizes = Object.keys(menuItem.prices);
-
-                    const sizeOptions = availableSizes.map(size => `<option value="${size}" ${item.size === size ? 'selected' : ''}>${size}</option>`).join('');
-                    const sweetnessDropdown = sweetnessOptions.map(level => `<option value="${level}" ${item.sweetness === level ? 'selected' : ''}>${level}</option>`).join('');
-
-                    const itemEl = document.createElement('div');
-                    itemEl.className = 'flex items-center justify-between bg-gray-50 p-2 rounded-lg';
-                    itemEl.innerHTML = `
-                        <div class="flex-grow grid grid-cols-2 gap-2">
-                            <p class="font-semibold col-span-2">${item.name}</p>
-                            <div class="flex flex-col">
-                                <span class="text-xs font-medium text-gray-500 mb-1">ขนาด</span>
-                                <select class="text-sm p-1 border rounded" onchange="updateOrderItemSize(${item.id}, this.value)">${sizeOptions}</select>
-                            </div>
-                            <div class="flex flex-col">
-                                <span class="text-xs font-medium text-gray-500 mb-1">หวาน</span>
-                                <select class="text-sm p-1 border rounded" onchange="updateOrderItemSweetness(${item.id}, this.value)">${sweetnessDropdown}</select>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 ml-4">
-                            <button class="w-6 h-6 bg-gray-200 rounded-full" onclick="updateOrderItemQuantity(${item.id}, -1)">-</button>
-                            <span>${item.quantity}</span>
-                            <button class="w-6 h-6 bg-gray-200 rounded-full" onclick="updateOrderItemQuantity(${item.id}, 1)">+</button>
-                        </div>
-                        <span class="w-20 text-right font-semibold">฿${(item.price * item.quantity).toLocaleString('th-TH')}</span>
-                        <button class="ml-2 text-red-500 hover:text-red-700" onclick="removeOrderItem(${item.id})">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
-                    `;
-                    currentOrderItemsEl.appendChild(itemEl);
-                });
-                submitOrderBtn.disabled = false;
-            }
-            updateTotalPrice();
-        }
-
-        function updateOrderItemSweetness(orderItemId, newSweetness) {
-            const orderItem = currentOrder.find(item => item.id === orderItemId);
-            orderItem.sweetness = newSweetness;
-            renderCurrentOrder();
-        }
-        
-        function updateOrderItemSize(orderItemId, newSize) {
-            const orderItem = currentOrder.find(item => item.id === orderItemId);
-            const menuItem = getItemDataById(orderItem.itemId);
-            if (menuItem.prices[newSize] !== undefined) {
-                orderItem.size = newSize;
-                orderItem.price = menuItem.prices[newSize];
-            }
-            renderCurrentOrder();
-        }
-
-        function updateOrderItemQuantity(orderItemId, change) {
-            const orderItem = currentOrder.find(item => item.id === orderItemId);
-            if (orderItem.quantity + change > 0) {
-                orderItem.quantity += change;
-            }
-            renderCurrentOrder();
-        }
-
-        function removeOrderItem(orderItemId) {
-            currentOrder = currentOrder.filter(item => item.id !== orderItemId);
-            renderCurrentOrder();
-        }
-
-        function updateTotalPrice() {
-            const total = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
-            totalPriceEl.textContent = `฿${total.toLocaleString('th-TH')}`;
-        }
-        
-        function shareOrderSummary() {
-            if (!lastCommittedOrder) {
-                alert('ไม่พบข้อมูลออเดอร์ล่าสุดสำหรับแชร์');
-                return;
-            }
-
-            const itemsText = lastCommittedOrder.items.map(item =>
-                `* ${item.name} (${item.size}, หวาน ${item.sweetness}) x${item.quantity} = ฿${(item.price * item.quantity).toLocaleString('th-TH')}`
-            ).join('\n');
-
-            const shareText =
-                `✅ *สรุปบิล #${lastCommittedOrder.id.substring(0, 8)} - ${new Date().toLocaleDateString('th-TH')}*\n` +
-                `----------------------------------------\n` +
-                `${itemsText}\n` +
-                `----------------------------------------\n` +
-                `📍 ที่อยู่: ${lastCommittedOrder.address}\n` +
-                `💰 *รวมทั้งสิ้น: ฿${lastCommittedOrder.total.toLocaleString('th-TH')}*\n\n` +
-                `💬 *[สำหรับการชำระเงิน] กรุณาใช้ QR Code ในรูปภาพ (ที่แนบมาพร้อมข้อความนี้) เพื่อสแกนจ่ายเงิน*\n` +
-                `ชื่อบัญชี: น.ส.นฤตญา นาเมืองรักษ์`;
-
-            if (navigator.share) {
-                navigator.share({ title: `บิลออเดอร์ #${lastCommittedOrder.id.substring(0, 8)}`, text: shareText })
-                .catch((error) => {
-                    navigator.clipboard.writeText(shareText)
-                        .then(() => alert('คัดลอกสรุปบิล (ข้อความ) ไปยังคลิปบอร์ดแล้ว!'))
-                        .catch(err => console.error('Could not copy text: ', err));
-                });
-            } else {
-                navigator.clipboard.writeText(shareText)
-                    .then(() => alert('คัดลอกสรุปบิล (ข้อความ) ไปยังคลิปบอร์ดแล้ว!'))
-                    .catch(err => console.error('Could not copy text: ', err));
-            }
-        }
-
-
-        // 🔥 UPDATED: Submit Order (กลับมาใช้ Firestore) 🔥
-        submitOrderBtn.addEventListener('click', () => {
-            const orderTotal = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-            if (currentOrder.length > 0) {
-                const address = deliveryAddressInput.value.trim();
-                const isPickup = address === '';
-                
-                if (isPickup) {
-                     if (!confirm("คุณไม่ได้กรอกที่อยู่ จะถือเป็น 'รับเองที่ร้าน' ใช่หรือไม่?")) { return; }
-                }
-
-                // *** แก้ไขตรงนี้: เปลี่ยนจาก "orders" เป็น "Orders" ***
-                db.collection("Orders").add({
-                    items: currentOrder,
-                    total: orderTotal,
-                    address: address || 'รับเองที่ร้าน',
-                    status: 'คิว',
-                    placedAt: firebase.firestore.FieldValue.serverTimestamp(), // ใช้เวลาจาก Server
-                })
-                .then(docRef => {
-                    lastCommittedOrder = {
-                         id: docRef.id, 
-                         items: [...currentOrder],
-                         total: orderTotal,
-                         address: address || 'รับเองที่ร้าน',
-                    };
-                    
-                    currentOrder = []; 
-                    deliveryAddressInput.value = '';
-                    renderCurrentOrder(); 
-                    showPaymentQRModal(orderTotal);
-                })
-                .catch(error => {
-                    console.error("Error adding document: ", error);
-                    alert("ไม่สามารถส่งออเดอร์ได้ กรุณาลองใหม่");
-                });
-            }
-        });
-
-        // 🔥 UPDATED: renderOrderQueue (ใช้ Order ID จาก Firestore และกรองสถานะ) 🔥
-        function renderOrderQueue() {
-            const activeQueue = orderQueue.filter(order => order.status !== 'เสร็จแล้ว' && order.status !== 'ยกเลิก');
-            const displayQueue = activeQueue.length > 0 ? activeQueue : orderQueue;
-
-
-            if (displayQueue.length === 0) {
-                orderQueueEl.innerHTML = '<p class="text-gray-400 text-center mt-4">ยังไม่มีออเดอร์ในคิว</p>';
-                return;
-            }
-            
-            orderQueueEl.innerHTML = '';
-            displayQueue.forEach(order => {
-                const itemsSummary = order.items.map(item => `${item.name} (${item.size}, หวาน ${item.sweetness}) x${item.quantity}`).join(', ');
-                const statusColor = {
-                    'คิว': 'bg-blue-100 text-blue-800',
-                    'กำลังทำ': 'bg-yellow-100 text-yellow-800',
-                    'เสร็จแล้ว': 'bg-green-100 text-green-800',
-                    'ยกเลิก': 'bg-red-100 text-red-800'
-                }[order.status];
-                
-                const isCompleted = order.status === 'เสร็จแล้ว' || order.status === 'ยกเลิก';
-
-                const orderCard = document.createElement('div');
-                orderCard.className = `p-4 rounded-lg shadow-sm ${isCompleted ? 'bg-gray-200 opacity-75' : 'bg-gray-50 hover:bg-white'}`;
-                
-                orderCard.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <h4 class="font-bold text-lg">ออเดอร์ #${order.id.substring(0, 8)}...</h4> 
-                            <p class="text-sm text-gray-600">${itemsSummary}</p>
-                            <p class="text-xs text-gray-500 mt-1">
-                                <span class="font-semibold">ที่อยู่:</span> ${order.address}
-                            </p>
-                        </div>
-                        <span class="text-lg font-bold text-teal-600">฿${order.total.toLocaleString('th-TH')}</span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm font-semibold px-2.5 py-0.5 rounded-full ${statusColor}">${order.status}</span>
-                        <div class="flex gap-2">
-                            ${order.status === 'คิว' ? `<button class="text-xs bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'กำลังทำ')">รับออเดอร์</button>` : ''}
-                            ${order.status === 'กำลังทำ' ? `<button class="text-xs bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'เสร็จแล้ว')">เสร็จสิ้น</button>` : ''}
-                            ${!isCompleted ? `<button class="text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'ยกเลิก')">ยกเลิก</button>` : ''}
-                        </div>
-                    </div>
-                `;
-                orderQueueEl.appendChild(orderCard);
-            });
-        }
-
-        // 🔥 UPDATED: updateOrderStatus (ใช้ Firebase ID/Doc Ref) 🔥
-        function updateOrderStatus(orderId, newStatus) {
-            const order = orderQueue.find(o => o.id === orderId);
-            if (!order) return;
-
-            const updateData = { status: newStatus };
-            if (newStatus === 'เสร็จแล้ว') {
-                updateData.completedAt = firebase.firestore.FieldValue.serverTimestamp();
-                
-                const batch = db.batch(); 
-                order.items.forEach(item => {
-                    const newLogRef = db.collection("salesLog").doc();
-                    batch.set(newLogRef, {
-                        name: item.name,
-                        size: item.size,
-                        sweetness: item.sweetness,
-                        quantity: item.quantity,
-                        price: item.price,
-                        soldAt: updateData.completedAt,
-                        orderId: orderId
-                    });
-                });
-                batch.commit().then(() => {
-                    console.log("Sales Log batch successfully written!");
-                }).catch((error) => {
-                    console.error("Error writing sales log batch: ", error);
-                });
-            }
-            
-            // *** แก้ไขตรงนี้: เปลี่ยนจาก "orders" เป็น "Orders" ***
-            db.collection("Orders").doc(orderId).update(updateData)
-                .then(() => console.log("Order status updated!"))
-                .catch(error => console.error("Error updating order: ", error));
-        }
-
-        function updateSalesDashboard() {
-            let salesToday = 0;
-            let salesWeek = 0;
-            let salesMonth = 0;
-            
-            menuSalesLog.forEach(log => {
-                const saleDate = log.soldAt ? new Date(log.soldAt.seconds * 1000) : new Date();
-                
-                const totalRevenue = log.price * log.quantity;
-
-                if (isToday(saleDate)) { salesToday += totalRevenue; }
-                if (isThisWeek(saleDate)) { salesWeek += totalRevenue; }
-                if (isThisMonth(saleDate)) { salesMonth += totalRevenue; }
-            });
-            
-            salesTodayEl.textContent = `฿${salesToday.toLocaleString('th-TH')}`;
-            salesWeekEl.textContent = `฿${salesWeek.toLocaleString('th-TH')}`;
-            salesMonthEl.textContent = `฿${salesMonth.toLocaleString('th-TH')}`;
-        }
-
-        function showMenuReport() {
-            const menuSales = {};
-            
-            menuSalesLog.forEach(log => {
-                const key = `${log.name} (${log.size}, หวาน ${log.sweetness})`;
-                if (!menuSales[key]) {
-                    menuSales[key] = { name: log.name, size: log.size, sweetness: log.sweetness, totalQuantity: 0, totalRevenue: 0, };
-                }
-                menuSales[key].totalQuantity += log.quantity;
-                menuSales[key].totalRevenue += log.price * log.quantity;
-            });
-            
-            const sortedMenuReport = Object.values(menuSales).sort((a, b) => b.totalQuantity - a.totalQuantity);
-            let tableHTML = '<p class="text-gray-500 mb-4">สรุปยอดขายเมนูทั้งหมดที่ทำเสร็จแล้ว เรียงตามจำนวนแก้วที่ขายได้มากที่สุด</p>';
-            if (sortedMenuReport.length === 0) {
-                tableHTML += '<p class="text-center text-gray-400 mt-10">ยังไม่มีข้อมูลการขายที่เสร็จสมบูรณ์</p>';
-            } else {
-                tableHTML += `<table class="min-w-full divide-y divide-gray-200"><thead class="bg-teal-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เมนู / ขนาด / ความหวาน</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">จำนวน (แก้ว)</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">รายได้รวม (฿)</th></tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
-                sortedMenuReport.forEach( (report, index) => {
-                    tableHTML += `<tr class="${index < 3 ? 'bg-yellow-50 font-semibold' : ''}"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.name} (${report.size}, หวาน ${report.sweetness})</td><td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">${report.totalQuantity.toLocaleString('th-TH')}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-right text-teal-600">${report.totalRevenue.toLocaleString('th-TH')}</td></tr>`;
-                });
-                tableHTML += '</tbody></table>';
-            }
-            menuReportContent.innerHTML = tableHTML;
-            menuReportModal.classList.remove('hidden');
-        }
-        
-        // Initial setup
-        renderMenu();
-        renderCurrentOrder();
-        initFirebaseListeners(); // ** เริ่ม Listener ที่นี่ **
-    </script>
+    <div class="container mx-auto p-4 max-w-7xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-teal-600">ระบบจัดการออเดอร์</h1>
+            <p class="text-gray-500">ใช้ Firebase Firestore สำหรับจัดการคิวแบบ Realtime</p>
+        </header>
+
+        <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
+            <h2 class="text-2xl font-semibold mb-4 border-b pb-2">📊 แดชบอร์ดสรุปยอดขาย</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-4">
+                <div class="bg-blue-50 p-4 rounded-xl">
+                    <p class="text-sm text-blue-600 font-medium">ยอดขายวันนี้</p>
+                    <p id="sales-today" class="text-3xl font-bold text-blue-800">฿0</p>
+                </div>
+                <div class="bg-green-50 p-4 rounded-xl">
+                    <p class="text-sm text-green-600 font-medium">ยอดขายสัปดาห์นี้</p>
+                    <p id="sales-week" class="text-3xl font-bold text-green-800">฿0</p>
+                </div>
+                <div class="bg-purple-50 p-4 rounded-xl">
+                    <p class="text-sm text-purple-600 font-medium">ยอดขายเดือนนี้</p>
+                    <p id="sales-month" class="text-3xl font-bold text-purple-800">฿0</p>
+                </div>
+            </div>
+            
+            <button onclick="showMenuReport()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                ⭐ ดูรายงานเมนูที่ขายดี
+            </button>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">เมนูเครื่องดื่ม</h2>
+                <div id="menu-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4 h-[60vh] overflow-y-auto no-scrollbar pr-2">
+                    
+                    <div class="p-3 bg-amber-700 hover:bg-amber-800 text-white font-bold rounded-lg text-center cursor-pointer transition duration-300 shadow-lg" onclick="showCoffeeMenuModal()">
+                        <span class="font-semibold">☕ เมนูกาแฟ (COFFEE)</span>
+                        <p class="text-xs mt-1">คลิกเพื่อเลือก</p>
+                    </div>
+
+                    <div class="p-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-center cursor-pointer transition duration-300 shadow-lg" onclick="showMatchaMenuModal()">
+                        <span class="font-semibold">🍵 เมนูมัทฉะ/ชาเขียว</span>
+                        <p class="text-xs mt-1">คลิกเพื่อเลือก</p>
+                    </div>
+                    
+                    <div class="p-3 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-lg text-center cursor-pointer transition duration-300 shadow-lg" onclick="showFruitSmoothieModal()">
+                        <span class="font-semibold">🍓 เมนูสมูทตี้ผลไม้/โยเกิร์ต</span>
+                        <p class="text-xs mt-1">คลิกเพื่อเลือก</p>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-8">
+                <div class="bg-white p-6 rounded-2xl shadow-lg flex-grow flex flex-col">
+                    <h2 class="text-2xl font-semibold mb-4 border-b pb-2">ออเดอร์ปัจจุบัน</h2>
+                    <div id="current-order-items" class="flex-grow space-y-2 overflow-y-auto no-scrollbar pr-2 mb-4 min-h-[150px]">
+                        <p class="text-gray-400 text-center mt-4">เลือกเมนูจากด้านซ้ายเพื่อเริ่ม...</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="delivery-address" class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่จัดส่ง (Delivery Address)</label>
+                        <textarea id="delivery-address" rows="3" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="กรอกรายละเอียดที่อยู่จัดส่งที่นี่"></textarea>
+                    </div>
+                    
+                    <div class="border-t pt-4">
+                        <div class="flex justify-between items-center text-xl font-bold mb-4">
+                            <span>รวมทั้งหมด:</span>
+                            <span id="total-price" class="text-teal-600">฿0</span>
+                        </div>
+                        <button id="submit-order-btn" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-gray-300">
+                            ส่งออเดอร์
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4 border-b pb-2">คิวออเดอร์</h2>
+                    <div id="order-queue" class="space-y-4 h-[25vh] overflow-y-auto no-scrollbar pr-2">
+                            <p class="text-gray-400 text-center mt-4">กำลังโหลดคิวจาก Firebase...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-8 shadow-xl text-center">
+            <svg class="w-16 h-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <h3 class="text-2xl font-semibold mb-2">สำเร็จ!</h3>
+            <p class="text-gray-600" id="modal-message"></p>
+        </div>
+    </div>
+
+    <div id="menu-report-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 shadow-xl w-11/12 max-w-2xl">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-2xl font-semibold text-teal-600">⭐ รายงานเมนูที่ขายดี</h3>
+                <button onclick="document.getElementById('menu-report-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="menu-report-content" class="h-96 overflow-y-auto">
+                </div>
+        </div>
+    </div>
+
+    <div id="matcha-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 shadow-xl w-11/12 max-w-lg">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-2xl font-bold text-emerald-600">🍵 เมนูชาเขียว/มัทฉะ (GREEN TEA)</h3>
+                <button onclick="document.getElementById('matcha-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="flex justify-between text-center font-bold text-gray-600 mb-2">
+                <span class="w-1/2 text-left">เมนู</span>
+                <span class="w-1/4">16 Oz.</span>
+                <span class="w-1/4">22 Oz.</span>
+            </div>
+            <div id="matcha-menu-list" class="space-y-2 h-96 overflow-y-auto pr-2">
+                </div>
+        </div>
+    </div>
+
+    <div id="coffee-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 shadow-xl w-11/12 max-w-lg">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-2xl font-bold text-amber-700">☕ เมนูกาแฟ (COFFEE)</h3>
+                <button onclick="document.getElementById('coffee-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="flex justify-between text-center font-bold text-gray-600 mb-2">
+                <span class="w-2/3 text-left">เมนู</span>
+                <span class="w-1/3 text-right">ราคา (฿)</span>
+            </div>
+            <div id="coffee-menu-list" class="space-y-2 h-96 overflow-y-auto pr-2">
+                </div>
+        </div>
+    </div>
+    
+    <div id="fruit-smoothie-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 shadow-xl w-11/12 max-w-lg">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-2xl font-bold text-sky-600">🍓 เมนูสมูทตี้ผลไม้/โยเกิร์ต</h3>
+                <button onclick="document.getElementById('fruit-smoothie-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="text-sm text-gray-500 mb-2">
+                <p class="font-bold text-sky-700">Fruit Smoothie (ผลไม้ปั่น)</p>
+            </div>
+            <div id="fruit-smoothie-list" class="space-y-2 mb-4 border-b pb-4">
+                </div>
+
+            <div class="text-sm text-gray-500 mb-2">
+                <p class="font-bold text-sky-700">Smoothie Yogurt (สมูทตี้โยเกิร์ต)</p>
+            </div>
+            <div id="smoothie-yogurt-list" class="space-y-2 h-64 overflow-y-auto pr-2">
+                </div>
+
+        </div>
+    </div>
+    
+    <div id="qr-payment-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-8 shadow-xl text-center w-11/12 max-w-sm">
+            <h3 class="text-2xl font-bold text-teal-600 mb-2">Krungthai THAI QR PAYMENT</h3>
+            <p class="text-xl font-medium text-gray-800 mb-3">ยอดรวม: <span id="qr-total-amount" class="text-red-600 font-extrabold">฿0</span></p>
+            
+            <div class="flex justify-center flex-col items-center p-2 bg-white border border-gray-100 rounded-xl shadow-lg mb-4">
+                
+                <div class="qr-image-container my-4">
+                    <img src="https://raw.githubusercontent.com/khamphi880-boop/Order-Menu/c9af72f12e59972d1bed7b54fc7ab6831bd56952/176464.jpg" 
+                            alt="Krungthai PromptPay QR Code" 
+                            class="w-full h-full object-contain mx-auto">
+                </div>
+                
+                <div class="w-full p-2 border-t pt-2">
+                    <p class="text-base text-gray-700 font-semibold">
+                        ชื่อบัญชี: <span class="font-bold text-gray-900">น.ส.นฤตญา นาเมืองรักษ์</span>
+                    </p>
+                </div>
+            </div>
+
+            <p class="text-sm text-red-500 mt-2">
+                *ยอดจะถูกกำหนดโดยอัตโนมัติ (กรุณายืนยันการชำระเงินกับพนักงาน)
+            </p>
+
+            <button onclick="shareOrderSummary()" class="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-lg flex items-center justify-center space-x-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.882 13.791 9 14.271 9 14.75c0 1.282-.622 2.45-1.608 3.018l-3.376 1.948A2.5 2.5 0 011 19.5V4.5a2.5 2.5 0 014.016-1.948l3.376 1.948A4.5 4.5 0 019 9.25c0 .479-.118.958-.316 1.407M16 12a4 4 0 100-8 4 4 0 000 8zM18 16a4 4 0 100-8 4 4 0 000 8z"></path></svg>
+                <span>แชร์สรุปบิล (LINE, อื่นๆ)</span>
+            </button>
+            
+            <button onclick="document.getElementById('qr-payment-modal').classList.add('hidden')" class="mt-3 w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 rounded-lg">
+                ยืนยันการรับชำระเงิน
+            </button>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script> 
+
+    <script>
+        // 2. โค้ด Configuration ของโปรเจกต์คุณ
+        // !!! ATTENTION !!!: ต้องเปลี่ยนค่าเหล่านี้เป็นค่าของโปรเจกต์คุณ
+        const firebaseConfig = {
+            apiKey: "AIzaSyDztPWzAu8Lz8olg_dhlCLBQVEyjTQqpOk", //
+            authDomain: "ordermanagement-f6724.firebaseapp.com", //
+            projectId: "ordermanagement-f6724", //
+            storageBucket: "ordermanagement-f6724.appspot.com", //
+            messagingSenderId: "321286666597",
+            appId: "1:321286666597:web:062fef7df8fc456fec098c",
+        };
+
+        // 3. Initialize App และ Firestore
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        // ====================================================================
+        // 📝 START: โค้ด JavaScript ระบบจัดการออเดอร์ (ปรับเป็น Firebase) 📝
+        // ====================================================================
+
+        // *** Menu Data (Full lists) ***
+        const menuData = [
+            { id: 1, name: 'เผือก', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 2, name: 'แคนตาลูป', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 3, name: 'นมสด', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 4, name: 'นมน้ำผึ้ง', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 5, name: 'นมวานิลลา', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 6, name: 'นมคาราเมล', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 7, name: 'นมเย็น/นมชมพู', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 8, name: 'นมบราวน์ชูการ์', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 9, name: 'นมสด งาดำ', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 10, name: 'นมมิ้นท์', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 11, name: 'โกโก้', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 12, name: 'นมมิ้นท์โกโก้', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 13, name: 'ช็อกโกแลต', prices: { '16 Oz.': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
+            { id: 14, name: 'นมมิ้นท์ช็อก', prices: { '16 Oz.': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
+            { id: 15, name: 'นมสดโอริโอ้', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 60 } },
+            { id: 16, name: 'นมกล้วย', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 60 } },
+            { id: 17, name: 'กล้วยช็อก', prices: { '16 Oz.': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
+            { id: 18, name: 'กล้วยโกโก้', prices: { '16 Oz.': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
+            { id: 19, name: 'มะพร้าวนมสด', prices: { '22 Oz. ปั่น': 55 } },
+            { id: 20, name: 'ชาไทย (ไต้หวัน)', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 21, name: 'ชาไทย (ใบชา)', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 22, name: 'ชาไทย ลาเต้ มะพร้าว', prices: { '16 Oz.': 45, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
+            { id: 23, name: 'ชาเขียว (ไม่กลิ่นมะลิ)', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 24, name: 'ชาเขียวลาเต้ มะพร้าว', prices: { '16 Oz.': 45, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
+            { id: 25, name: 'ชาเขียวมะนาว', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 26, name: 'ชามะนาว', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 27, name: 'ชาพีช', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 28, name: 'ชามะลิ', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 29, name: 'ชาลิ้นจี่', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+        ];
+        
+        const matchaMenuData = [
+            { id: -1, name: 'เพียวมัทฉะ', prices: { '16 Oz. เย็น': 40, '22 Oz. เย็น': 40 } },
+            { id: -2, name: 'เพียวมัทฉะ น้ำผึ้ง', prices: { '16 Oz. เย็น': 40, '22 Oz. เย็น': 40 } },
+            { id: -3, name: 'เพียวมัทฉะ วานิลลา', prices: { '16 Oz. เย็น': 40, '22 Oz. เย็น': 40 } },
+            { id: -4, name: 'เพียวมัทฉะ คาราเมล', prices: { '16 Oz. เย็น': 40, '22 Oz. เย็น': 40 } },
+            { id: -5, name: 'เพียวมัทฉะ มะพร้าว', prices: { '16 Oz. เย็น': 50, '22 Oz. เย็น': 60 } },
+            { id: -6, name: 'เพียวมัทฉะ น้ำส้ม', prices: { '16 Oz. เย็น': 50, '22 Oz. เย็น': 60 } },
+            { id: -7, name: 'มัทฉะลาเต้', prices: { '16 Oz. เย็น': 45, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
+            { id: -8, name: 'มัทฉะลาเต้ โอริโอ้', prices: { '16 Oz. เย็น': 55, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
+            { id: -9, name: 'มัทฉะลาเต้ คาราเมล', prices: { '16 Oz. เย็น': 50, '22 Oz. เย็น': 60, '22 Oz. ปั่น': 65 } },
+            { id: -10, name: 'มัทฉะลาเต้ มะพร้าวสด', prices: { '16 Oz. เย็น': 55, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
+            { id: -11, name: 'มัทฉะลาเต้ วานิลลา', prices: { '16 Oz. เย็น': 50, '22 Oz. เย็น': 60, '22 Oz. ปั่น': 65 } },
+            { id: -12, name: 'มัทฉะลาเต้ สตอเบอร์รี่', prices: { '16 Oz. เย็น': 55, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
+            { id: -13, name: 'มัทฉะลาเต้ บลูเบอร์รี่', prices: { '16 Oz. เย็น': 55, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
+            { id: -14, name: 'มัทฉะลาเต้ น้ำผึ้ง', prices: { '16 Oz. เย็น': 50, '22 Oz. เย็น': 60, '22 Oz. ปั่น': 65 } },
+            { id: -15, name: 'มัทฉะ อเมริกาโน่', prices: { '16 Oz. เย็น': 60, '22 Oz. เย็น': 70 } },
+            { id: -16, name: 'มัทฉะลาเต้ คอฟฟี่', prices: { '16 Oz. เย็น': 60, '22 Oz. เย็น': 70 } },
+            { id: -17, name: 'มัทฉะลาเต้ ถั่วแดง', prices: { '16 Oz. เย็น': 55, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
+            { id: -18, name: 'มัทฉะ ถั่วแดง (ปั่น)', prices: { '22 Oz. ปั่น': 70 } },
+        ];
+        
+        const coffeeMenuData = [
+            { id: -101, name: 'อเมริกาโน่', prices: { 'เย็น': 45, 'ปั่น': 55 } },
+            { id: -102, name: 'อเมริกาโน่ น้ำผึ้ง', prices: { 'เย็น': 50, 'ปั่น': 60 } },
+            { id: -103, name: 'อเมริกาโน่ มะพร้าว', prices: { 'เย็น': 55, 'ปั่น': 65 } },
+            { id: -104, name: 'อเมริกาโน่ น้ำส้ม', prices: { 'เย็น': 55, 'ปั่น': 65 } },
+            { id: -105, name: 'เอสเปรสโซ่', prices: { 'เย็น': 55, 'ปั่น': 65 } },
+            { id: -106, name: 'ลาเต้', prices: { 'เย็น': 55, 'ปั่น': 65 } },
+            { id: -107, name: 'ลาเต้ มะพร้าว นมสด', prices: { 'เย็น': 55, 'ปั่น': 65 } },
+            { id: -108, name: 'วานิลลา ลาเต้', prices: { 'เย็น': 55, 'ปั่น': 65 } },
+            { id: -109, name: 'คาปูชิโน่', prices: { 'เย็น': 55, 'ปั่น': 65 } },
+            { id: -110, name: 'มอคค่า', prices: { 'เย็น': 55, 'ปั่น': 65 } },
+            { id: -111, name: 'คาราเมล มัคคิอาโต้', prices: { 'เย็น': 55, 'ปั่น': 65 } },
+            { id: -112, name: 'เฮเซลนัท ลาเต้', prices: { 'เย็น': 55, 'ปั่น': 65 } },
+            { id: -113, name: 'มอคค่า มิ้นท์', prices: { 'เย็น': 55, 'ปั่น': 65 } },
+            { id: -114, name: 'ไวท์ช็อก มอคค่า', prices: { 'เย็น': 55, 'ปั่น': 65 } },
+            { id: -115, name: 'คาราเมล เฮเซลนัท ลาเต้', prices: { 'เย็น': 55, 'ปั่น': 65 } },
+        ];
+        
+        const fruitSmoothieData = [
+            { id: -201, name: 'นมสด กีวี่', prices: { '16 Oz. เย็น': 40, '16 Oz. ปั่น': 45, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 55 } },
+            { id: -202, name: 'นมสด สตอเบอร์รี่', prices: { '16 Oz. เย็น': 40, '16 Oz. ปั่น': 45, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 55 } },
+            { id: -203, name: 'สตอเบอร์รี่ ช็อก', prices: { '16 Oz. เย็น': 55, '16 Oz. ปั่น': 60, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
+            { id: -204, name: 'ชาไทย สตอเบอร์รี่', prices: { '16 Oz. เย็น': 55, '16 Oz. ปั่น': 60, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
+            { id: -205, name: 'ชาเขียว สตอเบอร์รี่', prices: { '16 Oz. เย็น': 55, '16 Oz. ปั่น': 60, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
+            { id: -206, name: 'โกโก้ สตอเบอร์รี่', prices: { '16 Oz. เย็น': 45, '16 Oz. ปั่น': 50, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
+            { id: -207, name: 'ช็อก สตอเบอร์รี่', prices: { '16 Oz. เย็น': 50, '16 Oz. ปั่น': 55, '22 Oz. เย็น': 60, '22 Oz. ปั่น': 65 } },
+            { id: -208, name: 'นมสด บลูเบอร์รี่', prices: { '16 Oz. เย็น': 45, '16 Oz. ปั่น': 50, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
+            { id: -209, name: 'บลูเบอร์รี่ ช็อก', prices: { '16 Oz. เย็น': 55, '16 Oz. ปั่น': 60, '22 Oz. เย็น': 65, '22 Oz. ปั่น': 70 } },
+        ];
+
+        const smoothieYogurtData = [
+            { id: -301, name: 'กีวี่', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
+            { id: -302, name: 'สตอเบอร์รี่', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
+            { id: -303, name: 'พีช', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
+            { id: -304, name: 'บลูเบอร์รี่', prices: { '16 Oz. ปั่น': 55, '22 Oz. ปั่น': 65 } },
+            { id: -305, name: 'มิกซ์เบอร์รี่', prices: { '16 Oz. ปั่น': 55, '22 Oz. ปั่น': 65 } },
+            { id: -306, name: 'โยเกิร์ต ปีโป้', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
+            { id: -307, name: 'ลิ้นจี่', prices: { '16 Oz. ปั่น': 55, '22 Oz. ปั่น': 65 } },
+            { id: -308, name: 'ส้ม', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
+        ];
+
+        // รวมเมนูทั้งหมด
+        const allMenuData = [...menuData, ...matchaMenuData, ...coffeeMenuData, ...fruitSmoothieData, ...smoothieYogurtData];
+        const sweetnessOptions = ['100%', '75%', '50%', '25%'];
+
+        // 🔥 Firebase Global Variables 🔥
+        let currentOrder = [];
+        let orderQueue = []; 
+        let menuSalesLog = []; 
+
+        const menuGrid = document.getElementById('menu-grid');
+        const currentOrderItemsEl = document.getElementById('current-order-items');
+        const totalPriceEl = document.getElementById('total-price');
+        const submitOrderBtn = document.getElementById('submit-order-btn');
+        const orderQueueEl = document.getElementById('order-queue');
+        const deliveryAddressInput = document.getElementById('delivery-address');
+
+        const salesTodayEl = document.getElementById('sales-today');
+        const salesWeekEl = document.getElementById('sales-week');
+        const salesMonthEl = document.getElementById('sales-month');
+        const menuReportModal = document.getElementById('menu-report-modal');
+        const menuReportContent = document.getElementById('menu-report-content');
+        const qrPaymentModal = document.getElementById('qr-payment-modal');
+        const qrTotalAmountEl = document.getElementById('qr-total-amount');
+
+        let lastCommittedOrder = null;
+
+        // Helper function to find item data from all menus (คงเดิม)
+        function getItemDataById(itemId) {
+            return allMenuData.find(i => i.id === itemId);
+        }
+        
+        function showPaymentQRModal(orderTotal) {
+            qrTotalAmountEl.textContent = `฿${orderTotal.toLocaleString('th-TH')}`;
+            qrPaymentModal.classList.remove('hidden');
+        }
+
+        // --- Date Helper Functions (คงเดิม) ---
+        function isToday(date) {
+            const today = new Date();
+            return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+        }
+
+        function isThisWeek(date) {
+            const now = new Date();
+            const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+            const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
+            return date >= startOfWeek && date <= endOfWeek;
+        }
+
+        function isThisMonth(date) {
+            const now = new Date();
+            return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+        }
+
+        // 🔥 Firebase Realtime Listeners (ใช้ Query 2 ชั้น) 🔥
+        function initFirebaseListeners() {
+            // 1. Realtime Listener สำหรับคิวออเดอร์ (orders Collection)
+            // *** แก้ไขตรงนี้: เปลี่ยนกลับไปเป็น "orders" (ตัวเล็ก) ***
+            db.collection("orders") 
+                .orderBy("status", "asc") 
+                .orderBy("placedAt", "asc") 
+                .onSnapshot(snapshot => { 
+                    orderQueue = snapshot.docs.map(doc => ({ 
+                        id: doc.id, 
+                        ...doc.data() 
+                    }));
+                    
+                    renderOrderQueue();
+                }, error => {
+                    console.error("Firebase Order Listener Error:", error);
+                    orderQueueEl.innerHTML = '<p class="text-red-500 text-center mt-4 font-bold">⚠️ ERROR: ไม่สามารถเชื่อมต่อฐานข้อมูลได้ (โปรดตรวจสอบ Console/Rules/Index)</p>';
+                });
+
+            // 2. Listener สำหรับยอดขาย (salesLog Collection)
+            db.collection("salesLog").onSnapshot(snapshot => {
+                menuSalesLog = snapshot.docs.map(doc => doc.data());
+                updateSalesDashboard();
+            }, error => {
+                console.error("Firebase Sales Listener Error:", error);
+            });
+        }
+        
+        // --- Modal Render Functions (คงเดิม) ---
+        
+        function showMatchaMenuModal() {
+            renderMatchaMenu();
+            document.getElementById('matcha-modal').classList.remove('hidden');
+        }
+
+        function renderMatchaMenu() {
+            const matchaMenuListEl = document.getElementById('matcha-menu-list');
+            matchaMenuListEl.innerHTML = '';
+            matchaMenuData.forEach(item => {
+                const p16 = item.prices['16 Oz. เย็น'] ? `฿${item.prices['16 Oz. เย็น']}` : 'X';
+                const p22 = item.prices['22 Oz. เย็น'] || item.prices['22 Oz. ปั่น'];
+                const p22Display = p22 ? `฿${p22}` : 'X';
+
+                const menuCard = document.createElement('div');
+                menuCard.className = 'matcha-menu-card';
+                menuCard.setAttribute('onclick', `addToOrder(${item.id})`);
+                menuCard.innerHTML = `
+                    <span class="w-1/2 text-sm font-medium text-gray-800">${item.name}</span>
+                    <span class="w-1/4 text-center text-sm ${p16 === 'X' ? 'text-red-500' : 'price-small'}">${p16}</span>
+                    <span class="w-1/4 text-center text-sm ${p22Display === 'X' ? 'text-red-500' : 'price-large'}">${p22Display}</span>
+                `;
+                matchaMenuListEl.appendChild(menuCard);
+            });
+        }
+        
+        function showCoffeeMenuModal() {
+            renderCoffeeMenu();
+            document.getElementById('coffee-modal').classList.remove('hidden');
+        }
+
+        function renderCoffeeMenu() {
+            const coffeeMenuListEl = document.getElementById('coffee-menu-list');
+            coffeeMenuListEl.innerHTML = '';
+            coffeeMenuData.forEach(item => {
+                let priceDisplay = '';
+                const sizes = Object.keys(item.prices);
+                
+                if (sizes.length === 1) {
+                    priceDisplay = `฿${item.prices[sizes[0]]} (${sizes[0]})`;
+                } else if (sizes.length === 2 && item.prices['เย็น'] && item.prices['ปั่น']) {
+                    if (item.prices['เย็น'] === item.prices['ปั่น']) {
+                        priceDisplay = `฿${item.prices['เย็น']}`;
+                    } else {
+                        priceDisplay = `฿${item.prices['เย็น']} / ฿${item.prices['ปั่น']} (ปั่น)`;
+                    }
+                } else if (sizes.length > 0) {
+                    priceDisplay = sizes.map(size => `฿${item.prices[size]} (${size})`).join(', ');
+                } else {
+                    priceDisplay = '---';
+                }
+
+                const menuCard = document.createElement('div');
+                menuCard.className = 'coffee-menu-card';
+                menuCard.setAttribute('onclick', `addToOrder(${item.id})`);
+                menuCard.innerHTML = `
+                    <span class="w-2/3 text-sm font-medium text-gray-800">${item.name}</span>
+                    <span class="w-1/3 text-right text-sm price-coffee">${priceDisplay}</span>
+                `;
+                coffeeMenuListEl.appendChild(menuCard);
+            });
+        }
+        
+        function showFruitSmoothieModal() {
+            renderFruitSmoothieMenu();
+            document.getElementById('fruit-smoothie-modal').classList.remove('hidden');
+        }
+
+        function renderFruitSmoothieMenu() {
+            const fruitSmoothieListEl = document.getElementById('fruit-smoothie-list');
+            const smoothieYogurtListEl = document.getElementById('smoothie-yogurt-list');
+            
+            fruitSmoothieListEl.innerHTML = '';
+            smoothieYogurtListEl.innerHTML = '';
+
+            // --- 1. Fruit Smoothie Section ---
+            const fruitSmoothieHeader = document.createElement('div');
+            fruitSmoothieHeader.className = 'flex justify-between text-center font-bold text-gray-600 mb-2 border-b pb-1 text-sm';
+            fruitSmoothieHeader.innerHTML = `<span class="w-1/2 text-left">เมนู</span><span class="w-1/4">16 Oz.</span><span class="w-1/4">22 Oz.</span>`;
+            fruitSmoothieListEl.appendChild(fruitSmoothieHeader);
+
+            fruitSmoothieData.forEach(item => {
+                const p16 = `${item.prices['16 Oz. เย็น'] || 'X'} / ${item.prices['16 Oz. ปั่น'] || 'X'}`;
+                const p22 = `${item.prices['22 Oz. เย็น'] || 'X'} / ${item.prices['22 Oz. ปั่น'] || 'X'}`;
+                const menuCard = document.createElement('div');
+                menuCard.className = 'smoothie-menu-card';
+                menuCard.setAttribute('onclick', `addToOrder(${item.id})`);
+                menuCard.innerHTML = `<span class="w-1/2 text-sm font-medium text-gray-800">${item.name}</span><span class="w-1/4 text-center text-xs price-smoothie">${p16}</span><span class="w-1/4 text-center text-xs price-smoothie">${p22}</span>`;
+                fruitSmoothieListEl.appendChild(menuCard);
+            });
+            
+            // --- 2. Smoothie Yogurt Section ---
+            const yogurtHeader = document.createElement('div');
+            yogurtHeader.className = 'flex justify-between text-center font-bold text-gray-600 mb-2 border-b pb-1 text-sm';
+            yogurtHeader.innerHTML = `<span class="w-2/3 text-left">เมนู (ปั่นเท่านั้น)</span><span class="w-1/6">16 Oz.</span><span class="w-1/6">22 Oz.</span>`;
+            smoothieYogurtListEl.appendChild(yogurtHeader);
+
+            smoothieYogurtData.forEach(item => {
+                const p16 = item.prices['16 Oz. ปั่น'];
+                const p22 = item.prices['22 Oz. ปั่น'];
+                const menuCard = document.createElement('div');
+                menuCard.className = 'smoothie-menu-card';
+                menuCard.setAttribute('onclick', `addToOrder(${item.id})`);
+                menuCard.innerHTML = `<span class="w-2/3 text-sm font-medium text-gray-800">${item.name}</span><span class="w-1/6 text-center text-xs price-smoothie">฿${p16}</span><span class="w-1/6 text-center text-xs price-smoothie">฿${p22}</span>`;
+                smoothieYogurtListEl.appendChild(menuCard);
+            });
+        }
+
+
+        // --- Core Application Logic (คงเดิม) ---
+        
+        function renderMenu() {
+             const specialMenuIds = [...matchaMenuData, ...coffeeMenuData, ...fruitSmoothieData, ...smoothieYogurtData].map(item => item.id);
+            const otherMenuData = menuData.filter(item => !specialMenuIds.includes(item.id));
+            
+            const existingSpecialButtons = menuGrid.querySelectorAll('.p-3.bg-amber-700, .p-3.bg-emerald-500, .p-3.bg-sky-500');
+            const newGridContent = Array.from(existingSpecialButtons).map(btn => btn.outerHTML).join('');
+            menuGrid.innerHTML = newGridContent;
+
+            otherMenuData.forEach(item => {
+                const menuItem = document.createElement('div');
+                menuItem.className = 'p-3 bg-teal-50 hover:bg-teal-100 rounded-lg text-center cursor-pointer transition duration-300 shadow-sm';
+                menuItem.innerHTML = `<span class="font-semibold">${item.name}</span>`;
+                menuItem.onclick = () => addToOrder(item.id);
+                menuGrid.appendChild(menuItem);
+            });
+        }
+
+        function addToOrder(itemId) {
+            const item = getItemDataById(itemId);
+            if (!item) return;
+
+            const defaultSize = Object.keys(item.prices)[0];
+            const defaultSweetness = sweetnessOptions[0];
+
+            const orderItem = {
+                id: Date.now(),
+                itemId: item.id,
+                name: item.name,
+                size: defaultSize,
+                price: item.prices[defaultSize],
+                quantity: 1,
+                sweetness: defaultSweetness,
+            };
+            currentOrder.push(orderItem);
+            renderCurrentOrder();
+            document.getElementById('matcha-modal').classList.add('hidden');
+            document.getElementById('coffee-modal').classList.add('hidden');
+            document.getElementById('fruit-smoothie-modal').classList.add('hidden');
+        }
+        
+        function renderCurrentOrder() {
+            if (currentOrder.length === 0) {
+                currentOrderItemsEl.innerHTML = '<p class="text-gray-400 text-center mt-4">เลือกเมนูจากด้านซ้ายเพื่อเริ่ม...</p>';
+                submitOrderBtn.disabled = true;
+            } else {
+                currentOrderItemsEl.innerHTML = '';
+                currentOrder.forEach(item => {
+                    const menuItem = getItemDataById(item.itemId);
+                    const availableSizes = Object.keys(menuItem.prices);
+
+                    const sizeOptions = availableSizes.map(size => `<option value="${size}" ${item.size === size ? 'selected' : ''}>${size}</option>`).join('');
+                    const sweetnessDropdown = sweetnessOptions.map(level => `<option value="${level}" ${item.sweetness === level ? 'selected' : ''}>${level}</option>`).join('');
+
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'flex items-center justify-between bg-gray-50 p-2 rounded-lg';
+                    itemEl.innerHTML = `
+                        <div class="flex-grow grid grid-cols-2 gap-2">
+                            <p class="font-semibold col-span-2">${item.name}</p>
+                            <div class="flex flex-col">
+                                <span class="text-xs font-medium text-gray-500 mb-1">ขนาด</span>
+                                <select class="text-sm p-1 border rounded" onchange="updateOrderItemSize(${item.id}, this.value)">${sizeOptions}</select>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-xs font-medium text-gray-500 mb-1">หวาน</span>
+                                <select class="text-sm p-1 border rounded" onchange="updateOrderItemSweetness(${item.id}, this.value)">${sweetnessDropdown}</select>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 ml-4">
+                            <button class="w-6 h-6 bg-gray-200 rounded-full" onclick="updateOrderItemQuantity(${item.id}, -1)">-</button>
+                            <span>${item.quantity}</span>
+                            <button class="w-6 h-6 bg-gray-200 rounded-full" onclick="updateOrderItemQuantity(${item.id}, 1)">+</button>
+                        </div>
+                        <span class="w-20 text-right font-semibold">฿${(item.price * item.quantity).toLocaleString('th-TH')}</span>
+                        <button class="ml-2 text-red-500 hover:text-red-700" onclick="removeOrderItem(${item.id})">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    `;
+                    currentOrderItemsEl.appendChild(itemEl);
+                });
+                submitOrderBtn.disabled = false;
+            }
+            updateTotalPrice();
+        }
+
+        function updateOrderItemSweetness(orderItemId, newSweetness) {
+            const orderItem = currentOrder.find(item => item.id === orderItemId);
+            orderItem.sweetness = newSweetness;
+            renderCurrentOrder();
+        }
+        
+        function updateOrderItemSize(orderItemId, newSize) {
+            const orderItem = currentOrder.find(item => item.id === orderItemId);
+            const menuItem = getItemDataById(orderItem.itemId);
+            if (menuItem.prices[newSize] !== undefined) {
+                orderItem.size = newSize;
+                orderItem.price = menuItem.prices[newSize];
+            }
+            renderCurrentOrder();
+        }
+
+        function updateOrderItemQuantity(orderItemId, change) {
+            const orderItem = currentOrder.find(item => item.id === orderItemId);
+            if (orderItem.quantity + change > 0) {
+                orderItem.quantity += change;
+            }
+            renderCurrentOrder();
+        }
+
+        function removeOrderItem(orderItemId) {
+            currentOrder = currentOrder.filter(item => item.id !== orderItemId);
+            renderCurrentOrder();
+        }
+
+        function updateTotalPrice() {
+            const total = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            totalPriceEl.textContent = `฿${total.toLocaleString('th-TH')}`;
+        }
+        
+        function shareOrderSummary() {
+            if (!lastCommittedOrder) {
+                alert('ไม่พบข้อมูลออเดอร์ล่าสุดสำหรับแชร์');
+                return;
+            }
+
+            const itemsText = lastCommittedOrder.items.map(item =>
+                `* ${item.name} (${item.size}, หวาน ${item.sweetness}) x${item.quantity} = ฿${(item.price * item.quantity).toLocaleString('th-TH')}`
+            ).join('\n');
+
+            const shareText =
+                `✅ *สรุปบิล #${lastCommittedOrder.id.substring(0, 8)} - ${new Date().toLocaleDateString('th-TH')}*\n` +
+                `----------------------------------------\n` +
+                `${itemsText}\n` +
+                `----------------------------------------\n` +
+                `📍 ที่อยู่: ${lastCommittedOrder.address}\n` +
+                `💰 *รวมทั้งสิ้น: ฿${lastCommittedOrder.total.toLocaleString('th-TH')}*\n\n` +
+                `💬 *[สำหรับการชำระเงิน] กรุณาใช้ QR Code ในรูปภาพ (ที่แนบมาพร้อมข้อความนี้) เพื่อสแกนจ่ายเงิน*\n` +
+                `ชื่อบัญชี: น.ส.นฤตญา นาเมืองรักษ์`;
+
+            if (navigator.share) {
+                navigator.share({ title: `บิลออเดอร์ #${lastCommittedOrder.id.substring(0, 8)}`, text: shareText })
+                .catch((error) => {
+                    navigator.clipboard.writeText(shareText)
+                        .then(() => alert('คัดลอกสรุปบิล (ข้อความ) ไปยังคลิปบอร์ดแล้ว!'))
+                        .catch(err => console.error('Could not copy text: ', err));
+                });
+            } else {
+                navigator.clipboard.writeText(shareText)
+                    .then(() => alert('คัดลอกสรุปบิล (ข้อความ) ไปยังคลิปบอร์ดแล้ว!'))
+                    .catch(err => console.error('Could not copy text: ', err));
+            }
+        }
+
+
+        // 🔥 UPDATED: Submit Order (กลับมาใช้ Firestore) 🔥
+        submitOrderBtn.addEventListener('click', () => {
+            const orderTotal = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+            if (currentOrder.length > 0) {
+                const address = deliveryAddressInput.value.trim();
+                const isPickup = address === '';
+                
+                if (isPickup) {
+                     if (!confirm("คุณไม่ได้กรอกที่อยู่ จะถือเป็น 'รับเองที่ร้าน' ใช่หรือไม่?")) { return; }
+                }
+
+                // *** ใช้ชื่อคอลเลกชัน "orders" (ตัวเล็ก) ตามข้อมูลจริงใน Firebase ***
+                db.collection("orders").add({
+                    items: currentOrder,
+                    total: orderTotal,
+                    address: address || 'รับเองที่ร้าน',
+                    status: 'คิว',
+                    placedAt: firebase.firestore.FieldValue.serverTimestamp(), // ใช้เวลาจาก Server
+                })
+                .then(docRef => {
+                    lastCommittedOrder = {
+                         id: docRef.id, 
+                         items: [...currentOrder],
+                         total: orderTotal,
+                         address: address || 'รับเองที่ร้าน',
+                    };
+                    
+                    currentOrder = []; 
+                    deliveryAddressInput.value = '';
+                    renderCurrentOrder(); 
+                    showPaymentQRModal(orderTotal);
+                })
+                .catch(error => {
+                    console.error("Error adding document: ", error);
+                    alert("ไม่สามารถส่งออเดอร์ได้ กรุณาลองใหม่");
+                });
+            }
+        });
+
+        // 🔥 UPDATED: renderOrderQueue (ใช้ Order ID จาก Firestore และกรองสถานะ) 🔥
+        function renderOrderQueue() {
+            const activeQueue = orderQueue.filter(order => order.status !== 'เสร็จแล้ว' && order.status !== 'ยกเลิก');
+            const displayQueue = activeQueue.length > 0 ? activeQueue : orderQueue;
+
+
+            if (displayQueue.length === 0) {
+                orderQueueEl.innerHTML = '<p class="text-gray-400 text-center mt-4">ยังไม่มีออเดอร์ในคิว</p>';
+                return;
+            }
+            
+            orderQueueEl.innerHTML = '';
+            displayQueue.forEach(order => {
+                const itemsSummary = order.items.map(item => `${item.name} (${item.size}, หวาน ${item.sweetness}) x${item.quantity}`).join(', ');
+                const statusColor = {
+                    'คิว': 'bg-blue-100 text-blue-800',
+                    'กำลังทำ': 'bg-yellow-100 text-yellow-800',
+                    'เสร็จแล้ว': 'bg-green-100 text-green-800',
+                    'ยกเลิก': 'bg-red-100 text-red-800'
+                }[order.status];
+                
+                const isCompleted = order.status === 'เสร็จแล้ว' || order.status === 'ยกเลิก';
+
+                const orderCard = document.createElement('div');
+                orderCard.className = `p-4 rounded-lg shadow-sm ${isCompleted ? 'bg-gray-200 opacity-75' : 'bg-gray-50 hover:bg-white'}`;
+                
+                orderCard.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h4 class="font-bold text-lg">ออเดอร์ #${order.id.substring(0, 8)}...</h4> 
+                            <p class="text-sm text-gray-600">${itemsSummary}</p>
+                            <p class="text-xs text-gray-500 mt-1">
+                                <span class="font-semibold">ที่อยู่:</span> ${order.address}
+                            </p>
+                        </div>
+                        <span class="text-lg font-bold text-teal-600">฿${order.total.toLocaleString('th-TH')}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-semibold px-2.5 py-0.5 rounded-full ${statusColor}">${order.status}</span>
+                        <div class="flex gap-2">
+                            ${order.status === 'คิว' ? `<button class="text-xs bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'กำลังทำ')">รับออเดอร์</button>` : ''}
+                            ${order.status === 'กำลังทำ' ? `<button class="text-xs bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'เสร็จแล้ว')">เสร็จสิ้น</button>` : ''}
+                            ${!isCompleted ? `<button class="text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'ยกเลิก')">ยกเลิก</button>` : ''}
+                        </div>
+                    </div>
+                `;
+                orderQueueEl.appendChild(orderCard);
+            });
+        }
+
+        // 🔥 UPDATED: updateOrderStatus (ใช้ Firebase ID/Doc Ref) 🔥
+        function updateOrderStatus(orderId, newStatus) {
+            const order = orderQueue.find(o => o.id === orderId);
+            if (!order) return;
+
+            const updateData = { status: newStatus };
+            if (newStatus === 'เสร็จแล้ว') {
+                updateData.completedAt = firebase.firestore.FieldValue.serverTimestamp();
+                
+                const batch = db.batch(); 
+                order.items.forEach(item => {
+                    const newLogRef = db.collection("salesLog").doc();
+                    batch.set(newLogRef, {
+                        name: item.name,
+                        size: item.size,
+                        sweetness: item.sweetness,
+                        quantity: item.quantity,
+                        price: item.price,
+                        soldAt: updateData.completedAt,
+                        orderId: orderId
+                    });
+                });
+                batch.commit().then(() => {
+                    console.log("Sales Log batch successfully written!");
+                }).catch((error) => {
+                    console.error("Error writing sales log batch: ", error);
+                });
+            }
+            
+            // *** ใช้ชื่อคอลเลกชัน "orders" (ตัวเล็ก) ตามข้อมูลจริงใน Firebase ***
+            db.collection("orders").doc(orderId).update(updateData)
+                .then(() => console.log("Order status updated!"))
+                .catch(error => console.error("Error updating order: ", error));
+        }
+
+        function updateSalesDashboard() {
+            let salesToday = 0;
+            let salesWeek = 0;
+            let salesMonth = 0;
+            
+            menuSalesLog.forEach(log => {
+                const saleDate = log.soldAt ? new Date(log.soldAt.seconds * 1000) : new Date();
+                
+                const totalRevenue = log.price * log.quantity;
+
+                if (isToday(saleDate)) { salesToday += totalRevenue; }
+                if (isThisWeek(saleDate)) { salesWeek += totalRevenue; }
+                if (isThisMonth(saleDate)) { salesMonth += totalRevenue; }
+            });
+            
+            salesTodayEl.textContent = `฿${salesToday.toLocaleString('th-TH')}`;
+            salesWeekEl.textContent = `฿${salesWeek.toLocaleString('th-TH')}`;
+            salesMonthEl.textContent = `฿${salesMonth.toLocaleString('th-TH')}`;
+        }
+
+        function showMenuReport() {
+            const menuSales = {};
+            
+            menuSalesLog.forEach(log => {
+                const key = `${log.name} (${log.size}, หวาน ${log.sweetness})`;
+                if (!menuSales[key]) {
+                    menuSales[key] = { name: log.name, size: log.size, sweetness: log.sweetness, totalQuantity: 0, totalRevenue: 0, };
+                }
+                menuSales[key].totalQuantity += log.quantity;
+                menuSales[key].totalRevenue += log.price * log.quantity;
+            });
+            
+            const sortedMenuReport = Object.values(menuSales).sort((a, b) => b.totalQuantity - a.totalQuantity);
+            let tableHTML = '<p class="text-gray-500 mb-4">สรุปยอดขายเมนูทั้งหมดที่ทำเสร็จแล้ว เรียงตามจำนวนแก้วที่ขายได้มากที่สุด</p>';
+            if (sortedMenuReport.length === 0) {
+                tableHTML += '<p class="text-center text-gray-400 mt-10">ยังไม่มีข้อมูลการขายที่เสร็จสมบูรณ์</p>';
+            } else {
+                tableHTML += `<table class="min-w-full divide-y divide-gray-200"><thead class="bg-teal-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เมนู / ขนาด / ความหวาน</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">จำนวน (แก้ว)</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">รายได้รวม (฿)</th></tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
+                sortedMenuReport.forEach( (report, index) => {
+                    tableHTML += `<tr class="${index < 3 ? 'bg-yellow-50 font-semibold' : ''}"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.name} (${report.size}, หวาน ${report.sweetness})</td><td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">${report.totalQuantity.toLocaleString('th-TH')}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-right text-teal-600">${report.totalRevenue.toLocaleString('th-TH')}</td></tr>`;
+                });
+                tableHTML += '</tbody></table>';
+            }
+            menuReportContent.innerHTML = tableHTML;
+            menuReportModal.classList.remove('hidden');
+        }
+        
+        // Initial setup
+        renderMenu();
+        renderCurrentOrder();
+        initFirebaseListeners(); // ** เริ่ม Listener ที่นี่ **
+    </script>
 </body>
 </html>
