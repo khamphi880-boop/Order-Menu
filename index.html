@@ -903,7 +903,7 @@
             
             if (isPickup) {
                  // If address is empty, ask for confirmation to treat it as 'Pickup'
-                 if (!confirm("คุณไม่ได้กรอกที่อยู่ จะถือเป็น 'รับเองที่ร้าน' ใช่หรือไม่? (กด OK เพื่อยืนยัน)")) { 
+                 if (!confirm("คุณไม่ได้กรอกที่อยู่ จะถือเป็น 'แขวนหน้าตึก' ใช่หรือไม่? (กด OK เพื่อยืนยัน)")) { 
                      // If user presses Cancel, stop the submission
                      return; 
                  }
@@ -914,7 +914,7 @@
             db.collection("orders").add({ 
                 items: currentOrder,
                 total: orderTotal,
-                address: address || 'รับเองที่ร้าน',
+                address: address || 'แขวนหน้าตึก',
                 notes: notes, 
                 status: 'คิว',
                 placedAt: firebase.firestore.FieldValue.serverTimestamp(), // ใช้เวลาจาก Server
@@ -924,7 +924,7 @@
                      id: docRef.id, 
                      items: [...currentOrder],
                      total: orderTotal,
-                     address: address || 'รับเองที่ร้าน',
+                     address: address || 'แขวนหน้าตึก',
                      notes: notes, 
                 };
                 
@@ -1124,3 +1124,4 @@
     </script>
 </body>
 </html>
+
