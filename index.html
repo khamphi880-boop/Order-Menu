@@ -394,7 +394,7 @@
 
         // รวมเมนูทั้งหมด
         const allMenuData = [...menuData, ...matchaMenuData, ...coffeeMenuData, ...fruitSmoothieData, ...smoothieYogurtData];
-        const sweetnessOptions = ['100%', '75%', '50%', '25%','0%'];
+        const sweetnessOptions = ['100%', '75%', '50%', '25%'];
 
         // 🔥 Firebase Global Variables 🔥
         let currentOrder = [];
@@ -933,6 +933,21 @@
                 }[order.status];
                 
                 const isCompleted = order.status === 'เสร็จแล้ว' || order.status === 'ยกเลิก';
+                
+                // NEW: Buttons based on owner status
+                let actionButtonsHtml = '';
+                if (isOwnerLoggedIn) {
+                    if (order.status === 'คิว') {
+                        actionButtonsHtml += `<button class="text-xs bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'กำลังทำ')">รับออเดอร์</button>`;
+                    } else if (order.status === 'กำลังทำ') {
+                        actionButtonsHtml += `<button class="text-xs bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'เสร็จแล้ว')">เสร็จสิ้น</button>`;
+                    }
+                    // Allow cancel for non-completed orders
+                    if (!isCompleted) {
+                         actionButtonsHtml += `<button class="text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'ยกเลิก')">ยกเลิก</button>`;
+                    }
+                }
+                // END NEW: Buttons based on owner status
 
                 const orderCard = document.createElement('div');
                 orderCard.className = `p-4 rounded-lg shadow-sm ${isCompleted ? 'bg-gray-200 opacity-75' : 'bg-gray-50 hover:bg-white'}`;
@@ -951,9 +966,7 @@
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-semibold px-2.5 py-0.5 rounded-full ${statusColor}">${order.status}</span>
                         <div class="flex gap-2">
-                            ${order.status === 'คิว' ? `<button class="text-xs bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'กำลังทำ')">รับออเดอร์</button>` : ''}
-                            ${order.status === 'กำลังทำ' ? `<button class="text-xs bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'เสร็จแล้ว')">เสร็จสิ้น</button>` : ''}
-                            ${!isCompleted ? `<button class="text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'ยกเลิก')">ยกเลิก</button>` : ''}
+                            ${actionButtonsHtml}
                         </div>
                     </div>
                 `;
@@ -963,6 +976,13 @@
 
         // 🔥 UPDATED: updateOrderStatus (ใช้ Firebase ID/Doc Ref) 🔥
         function updateOrderStatus(orderId, newStatus) {
+            
+            // NEW: Security check - only allow owner to proceed
+            if (!isOwnerLoggedIn) {
+                alert("ปฏิเสธ: คุณไม่มีสิทธิ์จัดการออเดอร์นี้ (กรุณา Login ด้วยสิทธิ์เจ้าของร้าน)");
+                return;
+            }
+            
             const order = orderQueue.find(o => o.id === orderId);
             if (!order) return;
 
@@ -1056,4 +1076,3 @@
     </script>
 </body>
 </html>
-
