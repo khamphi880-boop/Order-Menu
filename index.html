@@ -159,6 +159,10 @@
                         <textarea id="delivery-address" rows="3" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="กรอกรายละเอียดที่อยู่จัดส่งที่นี่"></textarea>
                     </div>
                     
+                    <div class="mb-4">
+                        <label for="order-notes" class="block text-sm font-medium text-gray-700 mb-1">ข้อมูลเพิ่มเติม/หมายเหตุ (เช่น ไม่ใส่แก้ว, เผ็ดน้อย)</label>
+                        <textarea id="order-notes" rows="2" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="กรอกหมายเหตุเพิ่มเติมสำหรับออเดอร์นี้"></textarea>
+                    </div>
                     <div class="border-t pt-4">
                         <div class="flex justify-between items-center text-xl font-bold mb-4">
                             <span>รวมทั้งหมด:</span>
@@ -394,7 +398,7 @@
 
         // รวมเมนูทั้งหมด
         const allMenuData = [...menuData, ...matchaMenuData, ...coffeeMenuData, ...fruitSmoothieData, ...smoothieYogurtData];
-        const sweetnessOptions = ['100%', '75%', '50%', '25%','0%'];
+        const sweetnessOptions = ['100%', '75%', '50%', '25%'];
 
         // 🔥 Firebase Global Variables 🔥
         let currentOrder = [];
@@ -408,6 +412,7 @@
         const submitOrderBtn = document.getElementById('submit-order-btn');
         const orderQueueEl = document.getElementById('order-queue');
         const deliveryAddressInput = document.getElementById('delivery-address');
+        const orderNotesInput = document.getElementById('order-notes'); // NEW: Notes input
 
         const salesDashboardContainer = document.getElementById('sales-dashboard-container'); // NEW
         const salesTodayEl = document.getElementById('sales-today');
@@ -849,12 +854,19 @@
                 `* ${item.name} (${item.size}, หวาน ${item.sweetness}) x${item.quantity} = ฿${(item.price * item.quantity).toLocaleString('th-TH')}`
             ).join('\n');
 
+            // NEW: Include notes in share summary
+            let notesText = '';
+            if (lastCommittedOrder.notes && lastCommittedOrder.notes.trim() !== '') {
+                notesText = `\n📝 หมายเหตุ: ${lastCommittedOrder.notes.trim()}\n`;
+            }
+
             const shareText =
                 `✅ *สรุปบิล #${lastCommittedOrder.id.substring(0, 8)} - ${new Date().toLocaleDateString('th-TH')}*\n` +
                 `----------------------------------------\n` +
                 `${itemsText}\n` +
                 `----------------------------------------\n` +
-                `📍 ที่อยู่: ${lastCommittedOrder.address}\n` +
+                `📍 ที่อยู่: ${lastCommittedOrder.address}` +
+                notesText + // Insert notes here
                 `💰 *รวมทั้งสิ้น: ฿${lastCommittedOrder.total.toLocaleString('th-TH')}*\n\n` +
                 `💬 *[สำหรับการชำระเงิน] กรุณาใช้ QR Code ในรูปภาพ (ที่แนบมาพร้อมข้อความนี้) เพื่อสแกนจ่ายเงิน*\n` +
                 `ชื่อบัญชี: น.ส.นฤตญา นาเมืองรักษ์`;
@@ -880,6 +892,7 @@
 
             if (currentOrder.length > 0) {
                 const address = deliveryAddressInput.value.trim();
+                const notes = orderNotesInput.value.trim(); // NEW: Get notes value
                 const isPickup = address === '';
                 
                 if (isPickup) {
@@ -890,6 +903,7 @@
                     items: currentOrder,
                     total: orderTotal,
                     address: address || 'รับเองที่ร้าน',
+                    notes: notes, // NEW: Add notes field
                     status: 'คิว',
                     placedAt: firebase.firestore.FieldValue.serverTimestamp(), // ใช้เวลาจาก Server
                 })
@@ -899,10 +913,12 @@
                          items: [...currentOrder],
                          total: orderTotal,
                          address: address || 'รับเองที่ร้าน',
+                         notes: notes, // Store notes for share summary
                     };
                     
                     currentOrder = []; 
                     deliveryAddressInput.value = '';
+                    orderNotesInput.value = ''; // NEW: Clear notes input
                     renderCurrentOrder(); 
                     showPaymentQRModal(orderTotal);
                 })
@@ -942,6 +958,12 @@
                 let orderHeader = `ออเดอร์ #${order.id.substring(0, 8)}...`;
                 let statusInfoForCustomer = '';
 
+                // NEW: Notes display
+                let notesDisplay = '';
+                if (order.notes && order.notes.trim() !== '') {
+                    notesDisplay = `<p class="text-xs text-red-600 font-semibold mt-1">📝 หมายเหตุ: ${order.notes.trim()}</p>`;
+                }
+                
                 if (isOwnerLoggedIn) {
                     // OWNER VIEW: Show full header and action buttons
                     orderHeader = `คิวที่ #${queueNumber} | ออเดอร์ #${order.id.substring(0, 8)}...`;
@@ -957,7 +979,7 @@
                 } else {
                     // CUSTOMER VIEW: Show queue number and status info only
                     orderHeader = `คิวที่ #${queueNumber} | ออเดอร์ #${order.id.substring(0, 8)}...`;
-                    statusInfoForCustomer = `<p class="text-sm text-blue-500 font-semibold mt-1">สถานะ: ${order.status}</p>`;
+                    // For customer view, we keep the status tag and hide the action buttons
                 }
                 
                 // Only increment the queue number for active orders
@@ -976,13 +998,11 @@
                             <p class="text-xs text-gray-500 mt-1">
                                 <span class="font-semibold">ที่อยู่:</span> ${order.address}
                             </p>
-                            ${!isOwnerLoggedIn ? statusInfoForCustomer : ''} 
-                        </div>
+                            ${notesDisplay} </div>
                         <span class="text-lg font-bold text-teal-600">฿${order.total.toLocaleString('th-TH')}</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        ${isOwnerLoggedIn ? `<span class="text-sm font-semibold px-2.5 py-0.5 rounded-full ${statusColor}">${order.status}</span>` : ''}
-                        
+                        <span class="text-sm font-semibold px-2.5 py-0.5 rounded-full ${statusColor}">${order.status}</span>
                         <div class="flex gap-2">
                             ${actionButtonsHtml}
                         </div>
