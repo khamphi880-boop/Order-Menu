@@ -426,9 +426,19 @@
         let lastCommittedOrder = null;
         let isOwnerLoggedIn = false; 
 
+        // NEW GLOBAL VARIABLE: Store source tag from URL
+        let orderSourceTag = ''; 
+
+
         // Helper function to find item data from all menus (คงเดิม)
         function getItemDataById(itemId) {
             return allMenuData.find(i => i.id === itemId);
+        }
+
+        // NEW FUNCTION: Extract parameter from URL
+        function getURLParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name) || ''; // Return empty string if not found
         }
         
         function showPaymentQRModal(orderTotal) {
@@ -859,6 +869,13 @@
             if (lastCommittedOrder.notes && lastCommittedOrder.notes.trim() !== '') {
                 notesText = `\n📝 หมายเหตุ: ${lastCommittedOrder.notes.trim()}\n`;
             }
+            
+            // NEW: Include source tag in share summary if available
+            let sourceTagText = '';
+            if (lastCommittedOrder.sourceTag && lastCommittedOrder.sourceTag.trim() !== '') {
+                sourceTagText = `\nSource: ${lastCommittedOrder.sourceTag.trim()}`;
+            }
+
 
             const shareText =
                 `✅ *สรุปบิล #${lastCommittedOrder.id.substring(0, 8)} - ${new Date().toLocaleDateString('th-TH')}*\n` +
@@ -866,10 +883,11 @@
                 `${itemsText}\n` +
                 `----------------------------------------\n` +
                 `📍 ที่อยู่: ${lastCommittedOrder.address}` +
-                notesText + // Insert notes here
+                notesText + 
                 `💰 *รวมทั้งสิ้น: ฿${lastCommittedOrder.total.toLocaleString('th-TH')}*\n\n` +
                 `💬 *[สำหรับการชำระเงิน] กรุณาใช้ QR Code ในรูปภาพ (ที่แนบมาพร้อมข้อความนี้) เพื่อสแกนจ่ายเงิน*\n` +
-                `ชื่อบัญชี: น.ส.นฤตญา นาเมืองรักษ์`;
+                `ชื่อบัญชี: น.ส.นฤตญา นาเมืองรักษ์` + 
+                sourceTagText; // Append source tag at the end
 
             if (navigator.share) {
                 navigator.share({ title: `บิลออเดอร์ #${lastCommittedOrder.id.substring(0, 8)}`, text: shareText })
@@ -918,6 +936,7 @@
                 notes: notes, 
                 status: 'คิว',
                 placedAt: firebase.firestore.FieldValue.serverTimestamp(), // ใช้เวลาจาก Server
+                sourceTag: orderSourceTag // NEW: Save the source tag
             })
             .then(docRef => {
                 lastCommittedOrder = {
@@ -926,6 +945,7 @@
                      total: orderTotal,
                      address: address || 'แขวนหน้าตึก',
                      notes: notes, 
+                     sourceTag: orderSourceTag // Store source tag for sharing/local display
                 };
                 
                 currentOrder = []; 
@@ -968,10 +988,16 @@
                 let actionButtonsHtml = '';
                 let orderHeader = `ออเดอร์ #${order.id.substring(0, 8)}...`;
                 
-                // NEW: Notes display
+                // Notes display
                 let notesDisplay = '';
                 if (order.notes && order.notes.trim() !== '') {
                     notesDisplay = `<p class="text-xs text-red-600 font-semibold mt-1">📝 หมายเหตุ: ${order.notes.trim()}</p>`;
+                }
+
+                // NEW: Source Tag display (only for owner)
+                let sourceTagDisplay = '';
+                if (isOwnerLoggedIn && order.sourceTag && order.sourceTag.trim() !== '') {
+                    sourceTagDisplay = `<p class="text-xs text-purple-600 font-semibold mt-1">🔗 ที่มา: ${order.sourceTag.trim()}</p>`;
                 }
                 
                 if (isOwnerLoggedIn) {
@@ -989,7 +1015,6 @@
                 } else {
                     // CUSTOMER VIEW: Show queue number and status info only
                     orderHeader = `คิวที่ #${queueNumber} | ออเดอร์ #${order.id.substring(0, 8)}...`;
-                    // For customer view, we keep the status tag and hide the action buttons
                 }
                 
                 // Only increment the queue number for active orders
@@ -1008,7 +1033,9 @@
                             <p class="text-xs text-gray-500 mt-1">
                                 <span class="font-semibold">ที่อยู่:</span> ${order.address}
                             </p>
-                            ${notesDisplay} </div>
+                            ${notesDisplay} 
+                            ${sourceTagDisplay} 
+                        </div>
                         <span class="text-lg font-bold text-teal-600">฿${order.total.toLocaleString('th-TH')}</span>
                     </div>
                     <div class="flex items-center justify-between">
@@ -1118,10 +1145,15 @@
         }
 
         // --- Initial setup ---
+        // NEW: Get the source tag when the page loads
+        orderSourceTag = getURLParameter('source_tag'); 
+        if (orderSourceTag) {
+            console.log(`Order source identified: ${orderSourceTag}`);
+        }
+        
         renderMenu();
         renderCurrentOrder();
         initFirebaseListeners(); // ** เริ่ม Listener ที่นี่ **
     </script>
 </body>
 </html>
-
