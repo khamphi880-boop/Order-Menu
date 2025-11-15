@@ -434,9 +434,10 @@
         const qrTotalAmountEl = document.getElementById('qr-total-amount');
         
         // --- CUSTOMIZABLE LINE LINK ---
-        // ** เปลี่ยน 'YOUR_LINE_ID' เป็น Line ID ของร้านคุณ หรือ 'oa_ID' ถ้าใช้ Line OA Link **
-        // ใช้รูปแบบ R/ti/p/@ID เพื่อให้เป็น Universal Link ที่ดีที่สุด
-        const LINE_LINK = 'https://line.me/R/ti/p/@khamphi295083'; 
+        // ** Line ID ที่อัปเดตแล้วเป็น nan570402 **
+        // หากเป็น Line ID ส่วนตัว ให้ใช้รูปแบบ https://line.me/ti/p/nan570402
+        // หากเป็น Line Official Account ให้ใช้รูปแบบ https://line.me/R/ti/p/@nan570402
+        const LINE_LINK = 'https://line.me/ti/p/nan570402'; 
 
         let lastCommittedOrder = null;
         let isOwnerLoggedIn = false; 
@@ -496,7 +497,7 @@
             const encodedMessage = encodeURIComponent(message);
             
             // ** 1. URL ที่ใช้บันทึกใน Firestore (สำหรับเจ้าของร้านคลิก) **
-            // ใช้ LINE_LINK ที่เป็น HTTPS Universal Link (เจ้าของร้านดูผ่านเว็บ/คอม)
+            // ใช้ LINE_LINK ที่เป็น HTTPS Universal Link (ชี้ไปที่ nan570402)
             let firestoreLineUrl = `${LINE_LINK}?text=${encodedMessage}`;
             
             // ** 2. URL สำหรับปุ่มลูกค้า (บังคับเปิดแอป/Share Sheet) **
@@ -1092,7 +1093,7 @@
                             ${notesDisplay}
                             ${sourceTagDisplay} 
                         </div>
-                        <span class="text-lg font-bold text-teal-600">฿${order.total.toLocaleString('th-TH')}</span>
+                        <span class="w-20 text-right text-lg font-bold text-teal-600">฿${order.total.toLocaleString('th-TH')}</span>
                     </div>
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-semibold px-2.5 py-0.5 rounded-full ${statusColor}">${order.status}</span>
