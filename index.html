@@ -394,7 +394,7 @@
 
         // รวมเมนูทั้งหมด
         const allMenuData = [...menuData, ...matchaMenuData, ...coffeeMenuData, ...fruitSmoothieData, ...smoothieYogurtData];
-        const sweetnessOptions = ['100%', '75%', '50%', '25%'];
+        const sweetnessOptions = ['100%', '75%', '50%', '25%','0%'];
 
         // 🔥 Firebase Global Variables 🔥
         let currentOrder = [];
@@ -451,7 +451,7 @@
 
         // 🔥 Firebase Realtime Listeners (ใช้ Query 2 ชั้น) 🔥
         function initFirebaseListeners() {
-            // ใช้ "orders" (ตัวเล็ก)
+            // ใช้ "orders" (ตัวเล็ก) 
             db.collection("orders") 
                 .orderBy("status", "asc") 
                 .orderBy("placedAt", "asc") 
@@ -915,6 +915,7 @@
 
         // 🔥 UPDATED: renderOrderQueue (ใช้ Order ID จาก Firestore และกรองสถานะ) 🔥
         function renderOrderQueue() {
+            // Filter to show only active orders (คิว, กำลังทำ)
             const displayQueue = orderQueue.filter(order => order.status !== 'เสร็จแล้ว' && order.status !== 'ยกเลิก');
 
             if (displayQueue.length === 0) {
@@ -923,6 +924,8 @@
             }
             
             orderQueueEl.innerHTML = '';
+            let queueNumber = 1; // Start queue numbering at 1
+            
             displayQueue.forEach(order => {
                 const itemsSummary = order.items.map(item => `${item.name} (${item.size}, หวาน ${item.sweetness}) x${item.quantity}`).join(', ');
                 const statusColor = {
@@ -934,20 +937,33 @@
                 
                 const isCompleted = order.status === 'เสร็จแล้ว' || order.status === 'ยกเลิก';
                 
-                // NEW: Buttons based on owner status
+                // Determine buttons and queue header based on owner status
                 let actionButtonsHtml = '';
+                let orderHeader = `ออเดอร์ #${order.id.substring(0, 8)}...`;
+                let statusInfoForCustomer = '';
+
                 if (isOwnerLoggedIn) {
+                    // OWNER VIEW: Show full header and action buttons
+                    orderHeader = `คิวที่ #${queueNumber} | ออเดอร์ #${order.id.substring(0, 8)}...`;
+                    
                     if (order.status === 'คิว') {
                         actionButtonsHtml += `<button class="text-xs bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'กำลังทำ')">รับออเดอร์</button>`;
                     } else if (order.status === 'กำลังทำ') {
                         actionButtonsHtml += `<button class="text-xs bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'เสร็จแล้ว')">เสร็จสิ้น</button>`;
                     }
-                    // Allow cancel for non-completed orders
                     if (!isCompleted) {
                          actionButtonsHtml += `<button class="text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'ยกเลิก')">ยกเลิก</button>`;
                     }
+                } else {
+                    // CUSTOMER VIEW: Show queue number and status info only
+                    orderHeader = `คิวที่ #${queueNumber} | ออเดอร์ #${order.id.substring(0, 8)}...`;
+                    statusInfoForCustomer = `<p class="text-sm text-blue-500 font-semibold mt-1">สถานะ: ${order.status}</p>`;
                 }
-                // END NEW: Buttons based on owner status
+                
+                // Only increment the queue number for active orders
+                if (!isCompleted) {
+                    queueNumber++;
+                }
 
                 const orderCard = document.createElement('div');
                 orderCard.className = `p-4 rounded-lg shadow-sm ${isCompleted ? 'bg-gray-200 opacity-75' : 'bg-gray-50 hover:bg-white'}`;
@@ -955,16 +971,18 @@
                 orderCard.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
                         <div>
-                            <h4 class="font-bold text-lg">ออเดอร์ #${order.id.substring(0, 8)}...</h4> 
+                            <h4 class="font-bold text-lg text-teal-700">${orderHeader}</h4> 
                             <p class="text-sm text-gray-600">${itemsSummary}</p>
                             <p class="text-xs text-gray-500 mt-1">
                                 <span class="font-semibold">ที่อยู่:</span> ${order.address}
                             </p>
+                            ${!isOwnerLoggedIn ? statusInfoForCustomer : ''} 
                         </div>
                         <span class="text-lg font-bold text-teal-600">฿${order.total.toLocaleString('th-TH')}</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-sm font-semibold px-2.5 py-0.5 rounded-full ${statusColor}">${order.status}</span>
+                        ${isOwnerLoggedIn ? `<span class="text-sm font-semibold px-2.5 py-0.5 rounded-full ${statusColor}">${order.status}</span>` : ''}
+                        
                         <div class="flex gap-2">
                             ${actionButtonsHtml}
                         </div>
