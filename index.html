@@ -155,7 +155,12 @@
                     </div>
                     
                     <div class="mb-4">
-                        <label for="delivery-address" class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่จัดส่ง (Delivery Address)</label>
+                        <label for="contact-info" class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร/Line ID ที่ติดต่อได้</label>
+                        <input type="text" id="contact-info" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="เช่น 08x-xxxxxxx หรือ Line ID ของคุณ">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="delivery-address" class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่จัดส่ง (หากมี, เว้นว่างหากรับเอง)</label>
                         <textarea id="delivery-address" rows="3" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="กรอกรายละเอียดที่อยู่จัดส่งที่นี่"></textarea>
                     </div>
                     
@@ -163,6 +168,7 @@
                         <label for="order-notes" class="block text-sm font-medium text-gray-700 mb-1">ข้อมูลเพิ่มเติม/หมายเหตุ (เช่น ไม่ใส่แก้ว, เผ็ดน้อย)</label>
                         <textarea id="order-notes" rows="2" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="กรอกหมายเหตุเพิ่มเติมสำหรับออเดอร์นี้"></textarea>
                     </div>
+                    
                     <div class="border-t pt-4">
                         <div class="flex justify-between items-center text-xl font-bold mb-4">
                             <span>รวมทั้งหมด:</span>
@@ -229,9 +235,9 @@
                 *ยอดจะถูกกำหนดโดยอัตโนมัติ (กรุณายืนยันการชำระเงินกับพนักงาน)
             </p>
 
-            <button onclick="shareOrderSummary()" class="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-lg flex items-center justify-center space-x-2">
+            <button onclick="sendLineMessage(true)" class="mt-4 w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg flex items-center justify-center space-x-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.882 13.791 9 14.271 9 14.75c0 1.282-.622 2.45-1.608 3.018l-3.376 1.948A2.5 2.5 0 011 19.5V4.5a2.5 2.5 0 014.016-1.948l3.376 1.948A4.5 4.5 0 019 9.25c0 .479-.118.958-.316 1.407M16 12a4 4 0 100-8 4 4 0 000 8zM18 16a4 4 0 100-8 4 4 0 000 8z"></path></svg>
-                <span>แชร์สรุปบิล (LINE, อื่นๆ)</span>
+                <span>คลิกเพื่อส่งข้อความ Line ยืนยันการสั่งซื้อ</span>
             </button>
             
             <button onclick="document.getElementById('qr-payment-modal').classList.add('hidden')" class="mt-3 w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 rounded-lg">
@@ -411,10 +417,14 @@
         const totalPriceEl = document.getElementById('total-price');
         const submitOrderBtn = document.getElementById('submit-order-btn');
         const orderQueueEl = document.getElementById('order-queue');
-        const deliveryAddressInput = document.getElementById('delivery-address');
-        const orderNotesInput = document.getElementById('order-notes'); // NEW: Notes input
+        
+        // --- UPDATED INPUTS ---
+        const contactInfoInput = document.getElementById('contact-info'); 
+        const deliveryAddressInput = document.getElementById('delivery-address'); 
+        const orderNotesInput = document.getElementById('order-notes'); 
+        // ----------------------
 
-        const salesDashboardContainer = document.getElementById('sales-dashboard-container'); // NEW
+        const salesDashboardContainer = document.getElementById('sales-dashboard-container'); 
         const salesTodayEl = document.getElementById('sales-today');
         const salesWeekEl = document.getElementById('sales-week');
         const salesMonthEl = document.getElementById('sales-month');
@@ -422,11 +432,13 @@
         const menuReportContent = document.getElementById('menu-report-content');
         const qrPaymentModal = document.getElementById('qr-payment-modal');
         const qrTotalAmountEl = document.getElementById('qr-total-amount');
+        
+        // --- CUSTOMIZABLE LINE LINK ---
+        // ** เปลี่ยน 'YOUR_LINE_ID' เป็น Line ID ของร้านคุณ หรือ 'oa_ID' ถ้าใช้ Line OA Link **
+        const LINE_LINK = 'https://line.me/ti/p/~YOUR_LINE_ID'; 
 
         let lastCommittedOrder = null;
         let isOwnerLoggedIn = false; 
-
-        // NEW GLOBAL VARIABLE: Store source tag from URL
         let orderSourceTag = ''; 
 
 
@@ -435,15 +447,60 @@
             return allMenuData.find(i => i.id === itemId);
         }
 
-        // NEW FUNCTION: Extract parameter from URL
+        // NEW FUNCTION: Extract parameter from URL (คงเดิม)
         function getURLParameter(name) {
             const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(name) || ''; // Return empty string if not found
+            return urlParams.get(name) || ''; 
         }
         
         function showPaymentQRModal(orderTotal) {
             qrTotalAmountEl.textContent = `฿${orderTotal.toLocaleString('th-TH')}`;
             qrPaymentModal.classList.remove('hidden');
+        }
+        
+        /**
+         * Generates the Line message and opens the chat window.
+         * @param {boolean} openChat - If true, opens the chat window. If false, just returns the URL.
+         * @param {string} [manualContactInfo=null] - Optional contact info override for pre-submission check.
+         * @param {string} [manualAddress=null] - Optional address override for pre-submission check.
+         * @param {number} [manualTotal=null] - Optional total override for pre-submission check.
+         * @param {string} [manualNotes=null] - Optional notes override for pre-submission check.
+         * @returns {string} The Line URL for chat.
+         */
+        function sendLineMessage(openChat = false, manualContactInfo = null, manualAddress = null, manualTotal = null, manualNotes = null) {
+            // Use lastCommittedOrder if available, otherwise use current input values or manual overrides
+            const data = lastCommittedOrder || { 
+                id: 'PENDING',
+                items: currentOrder,
+                total: manualTotal !== null ? manualTotal : currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0),
+                contactInfo: manualContactInfo !== null ? manualContactInfo : contactInfoInput.value.trim(),
+                address: manualAddress !== null ? manualAddress : (deliveryAddressInput.value.trim() || 'รับเองที่ร้าน'),
+                notes: manualNotes !== null ? manualNotes : orderNotesInput.value.trim()
+            };
+            
+            const itemsSummary = data.items.map(item => 
+                `${item.name} (${item.size}, หวาน ${item.sweetness}) x${item.quantity}`
+            ).join(', ');
+            
+            const message = 
+                `✅ *ออเดอร์ใหม่จากเว็บ* #${data.id.substring(0, 8)}:\n` +
+                `รายการ: ${itemsSummary}\n` +
+                `รวม: ฿${data.total.toLocaleString('th-TH')}\n` +
+                `ติดต่อ: ${data.contactInfo}\n` +
+                `ที่อยู่: ${data.address}\n` +
+                (data.notes && data.notes.trim() !== '' ? `หมายเหตุ: ${data.notes}\n` : '') +
+                `-- (ลูกค้าสั่งผ่านเว็บสำเร็จแล้ว)`;
+
+            const encodedMessage = encodeURIComponent(message);
+            // We use the Line Link defined globally
+            const lineUrl = `${LINE_LINK}?text=${encodedMessage}`;
+            
+            if (openChat) {
+                window.open(lineUrl, '_blank');
+                alert("โปรดกด 'ส่ง' ใน Line Chat เพื่อยืนยันการสั่งซื้อกับร้านค้า");
+            }
+            
+            return lineUrl;
         }
 
         // --- Date Helper Functions (คงเดิม) ---
@@ -464,9 +521,8 @@
             return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
         }
 
-        // 🔥 Firebase Realtime Listeners (ใช้ Query 2 ชั้น) 🔥
+        // 🔥 Firebase Realtime Listeners (ใช้ Query 2 ชั้น) 🔥 (คงเดิม)
         function initFirebaseListeners() {
-            // ใช้ "orders" (ตัวเล็ก) 
             db.collection("orders") 
                 .orderBy("status", "asc") 
                 .orderBy("placedAt", "asc") 
@@ -475,14 +531,12 @@
                         id: doc.id, 
                         ...doc.data() 
                     }));
-                    
                     renderOrderQueue();
                 }, error => {
                     console.error("Firebase Order Listener Error:", error);
                     orderQueueEl.innerHTML = '<p class="text-red-500 text-center mt-4 font-bold">⚠️ ERROR: ไม่สามารถเชื่อมต่อฐานข้อมูลได้ (โปรดตรวจสอบ Console/Rules/Index)</p>';
                 });
 
-            // 2. Listener สำหรับยอดขาย (salesLog Collection)
             db.collection("salesLog").onSnapshot(snapshot => {
                 menuSalesLog = snapshot.docs.map(doc => doc.data());
                 updateSalesDashboard();
@@ -490,23 +544,16 @@
                 console.error("Firebase Sales Listener Error:", error);
             });
             
-            // NEW: Auth listener for owner status
             auth.onAuthStateChanged(handleAuthChange);
         }
         
-        // --- Core Application Logic (ปรับปรุงเพื่อรองรับการเพิ่มจากหน้าหลัก) ---
+        // --- Core Application Logic (คงเดิม) ---
         
-        // Function to create a simple menu button
         function createMenuItemButton(item, size, price, colorClass) {
-            // *** UPDATED LOGIC HERE (Size Label) ***
             let sizeLabel = size;
             
             if (size.includes('Oz.')) {
-                // 1. Clean up "Oz." to "ออนซ์"
                 sizeLabel = size.replace('Oz.', ' ออนซ์');
-                
-                // 2. Custom rule: Add "เย็น" to "16 Oz." if it is ONLY "16 Oz." 
-                // Check if '16 Oz.' exists AND if there are other size options (suggesting '16 Oz.' is the base/cold 16oz)
                 const hasOther16Oz = item.prices['16 Oz. ปั่น'] || item.prices['16 Oz. เย็น'];
                 const has22OzOptions = item.prices['22 Oz. เย็น'] || item.prices['22 Oz. ปั่น'];
 
@@ -514,26 +561,21 @@
                     sizeLabel = '16 ออนซ์ เย็น';
                 }
                 
-                // 3. Keep specific suffixes ('เย็น' and 'ปั่น') if they exist in the original size string
                 if (size.includes('เย็น')) {
-                     sizeLabel = sizeLabel.replace(' เย็น', ' เย็น'); // Keep ' เย็น'
+                     sizeLabel = sizeLabel.replace(' เย็น', ' เย็น'); 
                 } else if (size.includes('ปั่น')) {
-                     sizeLabel = sizeLabel.replace(' ปั่น', ' ปั่น'); // Keep ' ปั่น'
+                     sizeLabel = sizeLabel.replace(' ปั่น', ' ปั่น'); 
                 }
 
-                // Final cleanup: remove potential double spaces and leading/trailing spaces
                 sizeLabel = sizeLabel.replace(/\s\s+/g, ' ').trim();
                 
             }
-            // For Coffee size like 'เย็น' or 'ปั่น', use the exact name
             else if (size === 'เย็น' || size === 'ปั่น') {
                 sizeLabel = size;
             }
-            // ****************************
 
             const menuItem = document.createElement('div');
             menuItem.className = `main-menu-card ${colorClass}`;
-            // NEW FUNCTION CALL: Pass itemId, size, and price directly
             menuItem.setAttribute('onclick', `addToOrder(${item.id}, '${size.replace(/'/g, "\\'")}', ${price})`);
 
             let imageHtml = '';
@@ -543,10 +585,8 @@
                  imageHtml = `<div class="menu-image flex items-center justify-center text-xs text-gray-400 bg-gray-100">ไม่มีรูปภาพ</div>`;
             }
             
-            // NEW: Upload Button (Hidden by default, shown by JS when owner logs in)
             const uploadBtnHtml = `<span class="upload-img-btn text-xs" style="display: none;" onclick="event.stopPropagation(); showImageUploadModal(${item.id}, '${item.name}', '${size.replace(/'/g, "\\'")}', ${price})">📷</span>`;
 
-            // *** แก้ไข: ลบวงเล็บและขนาดออกจากบรรทัดชื่อเมนู (item.name) ***
             menuItem.innerHTML = `
                 ${uploadBtnHtml}
                 ${imageHtml}
@@ -557,12 +597,10 @@
             return menuItem;
         }
 
-        // NEW: Function to render specific category menus
         function renderCategoryMenu(categoryName, menuData, colorClass, containerId) {
             const container = document.getElementById(containerId);
             container.innerHTML = '';
             
-            // Logic to determine which sizes/options to show as separate buttons for this category
             menuData.forEach(item => {
                 const availableSizes = Object.keys(item.prices);
                 
@@ -573,28 +611,24 @@
                 });
             });
             
-            // Ensure owner upload buttons are visible if logged in
             if (isOwnerLoggedIn) {
                 document.querySelectorAll('.upload-img-btn').forEach(btn => btn.style.display = 'block');
             }
         }
 
 
-        // Function to handle the category toggle
         function toggleCategory(containerId) {
             const container = document.getElementById(containerId);
             container.classList.toggle('hidden');
             
-            // Optional: rotate arrow icon (for visual feedback)
             const btn = document.querySelector(`#${containerId}`).previousElementSibling;
             const arrow = btn.querySelector('svg');
             arrow.classList.toggle('rotate-180');
         }
 
         function renderMenu() {
-            menuGrid.innerHTML = ''; // Clear existing grid
+            menuGrid.innerHTML = ''; 
             
-            // Define Categories
             const categories = [
                 { title: '🥛 นม/ชา/โกโก้ (Standard)', data: menuData, color: 'bg-teal-500 hover:bg-teal-600', colorClass: 'bg-teal-50 hover:bg-teal-100', containerId: 'menu-standard' },
                 { title: '🍵 เมนูมัทฉะ/ชาเขียว', data: matchaMenuData, color: 'bg-emerald-500 hover:bg-emerald-600', colorClass: 'bg-emerald-50 hover:bg-emerald-100', containerId: 'menu-matcha' },
@@ -604,7 +638,6 @@
             ];
 
             categories.forEach(category => {
-                // 1. Create the Toggle Button
                 const toggleBtn = document.createElement('div');
                 toggleBtn.className = `category-toggle-btn ${category.color}`;
                 toggleBtn.setAttribute('onclick', `toggleCategory('${category.containerId}')`);
@@ -614,13 +647,11 @@
                 `;
                 menuGrid.appendChild(toggleBtn);
 
-                // 2. Create the Menu Container (hidden by default)
                 const menuContainer = document.createElement('div');
                 menuContainer.id = category.containerId;
-                menuContainer.className = 'menu-container-grid hidden'; // Starts hidden
+                menuContainer.className = 'menu-container-grid hidden'; 
                 menuGrid.appendChild(menuContainer);
 
-                // 3. Populate the container with individual menu items (buttons)
                 renderCategoryMenu(category.title, category.data, category.colorClass, category.containerId);
             });
         }
@@ -629,12 +660,10 @@
             const item = getItemDataById(itemId);
             if (!item) return;
 
-            // 1. Determine size and price based on passed arguments or default
             let finalSize = size;
             let finalPrice = price;
 
             if (finalSize === null || finalPrice === null) {
-                // Fallback to the first available size if size/price are not passed
                 const defaultSize = Object.keys(item.prices)[0];
                 finalSize = defaultSize;
                 finalPrice = item.prices[defaultSize];
@@ -642,7 +671,6 @@
 
             const defaultSweetness = sweetnessOptions[0];
 
-            // 2. Create the new order item object
             const orderItem = {
                 id: Date.now(),
                 itemId: item.id,
@@ -653,24 +681,20 @@
                 sweetness: defaultSweetness,
             };
             
-            // 3. Check if item already exists in current order (for stacking)
             const existingItemIndex = currentOrder.findIndex(
                 i => i.itemId === itemId && i.size === finalSize && i.sweetness === defaultSweetness
             );
 
             if (existingItemIndex !== -1) {
-                // If found, just increase quantity
                 currentOrder[existingItemIndex].quantity += 1;
             } else {
-                // If not found, add new item
                 currentOrder.push(orderItem);
             }
             
-            // 4. Re-render the cart
             renderCurrentOrder();
         }
         
-        // --- Owner Authentication & Image URL Saving Logic (No Storage Used) ---
+        // --- Owner Authentication Logic (คงเดิม) ---
         
         function showOwnerLogin() {
             document.getElementById('owner-login-modal').classList.remove('hidden');
@@ -692,25 +716,20 @@
         
         function handleAuthChange(user) {
             if (user) {
-                // Owner is logged in
                 isOwnerLoggedIn = true;
                 document.getElementById('owner-login-btn').classList.add('hidden');
                 document.getElementById('owner-logout-btn').classList.remove('hidden');
                 
-                // Show dashboard and upload buttons
-                salesDashboardContainer.style.display = 'block'; // NEW: Show Sales Dashboard
+                salesDashboardContainer.style.display = 'block'; 
                 document.querySelectorAll('.upload-img-btn').forEach(btn => btn.style.display = 'block');
                 
-                // Optional: Show status
                 alert(`ผู้ใช้: ${user.email} เข้าสู่ระบบแล้ว (สิทธิ์เจ้าของร้าน)`);
             } else {
-                // Owner is logged out
                 isOwnerLoggedIn = false;
                 document.getElementById('owner-login-btn').classList.remove('hidden');
                 document.getElementById('owner-logout-btn').classList.add('hidden');
                 
-                // Hide dashboard and upload buttons
-                salesDashboardContainer.style.display = 'none'; // NEW: Hide Sales Dashboard
+                salesDashboardContainer.style.display = 'none'; 
                 document.querySelectorAll('.upload-img-btn').forEach(btn => btn.style.display = 'none');
             }
         }
@@ -720,34 +739,30 @@
             const item = getItemDataById(itemId);
             
             document.getElementById('upload-menu-name').textContent = `สำหรับเมนู: **${itemName}** (ID: ${itemId})`;
-            document.getElementById('menu-image-url').value = item.imageUrl || ''; // Pre-fill current URL if exists
+            document.getElementById('menu-image-url').value = item.imageUrl || ''; 
             document.getElementById('image-upload-modal').classList.remove('hidden');
         }
 
-        // NEW: Function to save image URL directly to the local menu data (NO FIREBASE STORAGE)
         function saveImageUrlToMenu() {
             if (!currentMenuDoc) return alert("Error: ไม่พบเมนูที่เลือก");
             
             const imageUrl = document.getElementById('menu-image-url').value.trim();
             
-            // Find the corresponding item in the menu data array
             const itemIndex = allMenuData.findIndex(item => item.id === currentMenuDoc);
             if (itemIndex === -1) {
                 alert("Error: ไม่พบเมนูในข้อมูล");
                 return;
             }
             
-            // Update the local data with the imageUrl
             allMenuData[itemIndex].imageUrl = imageUrl;
             
-            // Re-render the menu to show the image
             renderMenu(); 
             
             alert("บันทึก URL รูปภาพสำเร็จ! (ข้อมูลจะหายไปเมื่อรีเฟรชหน้า หากไม่ได้บันทึกลง Firestore)");
             document.getElementById('image-upload-modal').classList.add('hidden');
         }
         
-        // --- The rest of the functions (renderCurrentOrder, updateOrderStatus, etc.) are standard ---
+        // --- Core Order Rendering Logic (คงเดิม) ---
 
         function renderCurrentOrder() {
             if (currentOrder.length === 0) {
@@ -795,15 +810,12 @@
 
         function updateOrderItemSweetness(orderItemId, newSweetness) {
             const orderItem = currentOrder.find(item => item.id === orderItemId);
-            // Check if sweetness is being changed to see if we need to split the order line
             if (orderItem.sweetness !== newSweetness) {
-                // If quantity > 1, reduce quantity by 1, and add a new line with new sweetness
                 if (orderItem.quantity > 1) {
                     orderItem.quantity -= 1;
                     const newItem = {...orderItem, id: Date.now(), sweetness: newSweetness, quantity: 1};
                     currentOrder.push(newItem);
                 } else {
-                    // If quantity is 1, just update the sweetness
                     orderItem.sweetness = newSweetness;
                 }
             }
@@ -815,16 +827,13 @@
             const menuItem = getItemDataById(orderItem.itemId);
             
             if (menuItem.prices[newSize] !== undefined) {
-                // Check if size is being changed to see if we need to split the order line
                 if (orderItem.size !== newSize) {
-                    // If quantity > 1, reduce quantity by 1, and add a new line with new size
                     if (orderItem.quantity > 1) {
                         orderItem.quantity -= 1;
                         const newPrice = menuItem.prices[newSize];
                         const newItem = {...orderItem, id: Date.now(), size: newSize, price: newPrice, quantity: 1};
                         currentOrder.push(newItem);
                     } else {
-                        // If quantity is 1, just update size and price
                         orderItem.size = newSize;
                         orderItem.price = menuItem.prices[newSize];
                     }
@@ -838,7 +847,7 @@
             if (orderItem.quantity + change > 0) {
                 orderItem.quantity += change;
             } else if (orderItem.quantity + change === 0) {
-                removeOrderItem(orderItemId); // Remove if quantity hits zero
+                removeOrderItem(orderItemId); 
                 return;
             }
             renderCurrentOrder();
@@ -853,7 +862,9 @@
             const total = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
             totalPriceEl.textContent = `฿${total.toLocaleString('th-TH')}`;
         }
-        
+
+
+        // --- Share Summary Logic (คงเดิม) ---
         function shareOrderSummary() {
             if (!lastCommittedOrder) {
                 alert('ไม่พบข้อมูลออเดอร์ล่าสุดสำหรับแชร์');
@@ -864,30 +875,28 @@
                 `* ${item.name} (${item.size}, หวาน ${item.sweetness}) x${item.quantity} = ฿${(item.price * item.quantity).toLocaleString('th-TH')}`
             ).join('\n');
 
-            // NEW: Include notes in share summary
             let notesText = '';
             if (lastCommittedOrder.notes && lastCommittedOrder.notes.trim() !== '') {
                 notesText = `\n📝 หมายเหตุ: ${lastCommittedOrder.notes.trim()}\n`;
             }
             
-            // NEW: Include source tag in share summary if available
             let sourceTagText = '';
             if (lastCommittedOrder.sourceTag && lastCommittedOrder.sourceTag.trim() !== '') {
                 sourceTagText = `\nSource: ${lastCommittedOrder.sourceTag.trim()}`;
             }
 
-
             const shareText =
                 `✅ *สรุปบิล #${lastCommittedOrder.id.substring(0, 8)} - ${new Date().toLocaleDateString('th-TH')}*\n` +
                 `----------------------------------------\n` +
+                `📱 ติดต่อ: ${lastCommittedOrder.contactInfo}\n` + 
                 `${itemsText}\n` +
                 `----------------------------------------\n` +
-                `📍 ที่อยู่: ${lastCommittedOrder.address}` +
+                `📍 ที่อยู่: ${lastCommittedOrder.address}` + 
                 notesText + 
                 `💰 *รวมทั้งสิ้น: ฿${lastCommittedOrder.total.toLocaleString('th-TH')}*\n\n` +
                 `💬 *[สำหรับการชำระเงิน] กรุณาใช้ QR Code ในรูปภาพ (ที่แนบมาพร้อมข้อความนี้) เพื่อสแกนจ่ายเงิน*\n` +
                 `ชื่อบัญชี: น.ส.นฤตญา นาเมืองรักษ์` + 
-                sourceTagText; // Append source tag at the end
+                sourceTagText; 
 
             if (navigator.share) {
                 navigator.share({ title: `บิลออเดอร์ #${lastCommittedOrder.id.substring(0, 8)}`, text: shareText })
@@ -904,53 +913,73 @@
         }
 
 
-        // 🔥 UPDATED: Submit Order (กลับมาใช้ Firestore) 🔥
+        // 🔥 UPDATED: Submit Order (พร้อม Validation และบันทึก URL) 🔥
         submitOrderBtn.addEventListener('click', () => {
             const orderTotal = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
-            const address = deliveryAddressInput.value.trim(); // Get address
+            const rawContactInfo = contactInfoInput.value.trim(); 
+            const address = deliveryAddressInput.value.trim(); 
             const notes = orderNotesInput.value.trim(); 
             
-            // NEW: 1. CHECK IF CART IS EMPTY
+            // 1. CHECK IF CART IS EMPTY (REQUIRED)
             if (currentOrder.length === 0) {
                  alert("กรุณาเลือกเมนูอย่างน้อย 1 รายการก่อนส่งออเดอร์");
                  return; 
             }
             
-            // NEW: 2. CHECK DELIVERY ADDRESS
+            // 2. CHECK DELIVERY ADDRESS
             const isPickup = address === '';
             
-            if (isPickup) {
-                 // If address is empty, ask for confirmation to treat it as 'Pickup'
-                 if (!confirm("คุณไม่ได้กรอกที่อยู่ จะถือเป็น 'รับเองที่ร้าน' ใช่หรือไม่? (กด OK เพื่อยืนยัน)")) { 
-                     // If user presses Cancel, stop the submission
-                     return; 
+            // 3. CHECK CONTACT INFO AND ADDRESS
+            let contactInfo = rawContactInfo;
+            
+            if (!isPickup && contactInfo === '') {
+                 // ถ้าเป็นการจัดส่ง (Delivery) แต่ไม่กรอกข้อมูลติดต่อ ถือว่าไม่ผ่าน
+                 alert("หากต้องการให้จัดส่ง กรุณากรอกเบอร์โทรศัพท์หรือ Line ID ที่สามารถติดต่อได้");
+                 contactInfoInput.focus();
+                 return;
+            } else if (isPickup && contactInfo === '') {
+                 // ถ้าเป็นการรับเอง (Pickup) และไม่กรอกข้อมูลติดต่อ: อนุโลม
+                 if (!confirm("คุณไม่ได้กรอกข้อมูลติดต่อและไม่ได้กรอกที่อยู่ จะถือเป็น 'รับเองที่ร้าน' โดยไม่มีช่องทางติดต่อกลับ หากยืนยัน โปรดกด OK")) { 
+                      return; 
                  }
+                 contactInfo = 'รับเอง_ไม่มีช่องทางติดต่อ';
             }
-
+            
+            // 4. Generate the Line Chat URL
+            // ใช้ค่าที่กำหนดแล้ว (contactInfo และ address) เพื่อสร้าง URL ที่ถูกต้อง
+            const contactLineURL = sendLineMessage(false, contactInfo, address || 'รับเองที่ร้าน', orderTotal, notes); 
+            
             // --- Proceed with submission ---
             
             db.collection("orders").add({ 
                 items: currentOrder,
                 total: orderTotal,
+                contactInfo: contactInfo,
+                contactLineURL: contactLineURL, // NEW: Save the Line URL here
                 address: address || 'รับเองที่ร้าน',
                 notes: notes, 
                 status: 'คิว',
-                placedAt: firebase.firestore.FieldValue.serverTimestamp(), // ใช้เวลาจาก Server
-                sourceTag: orderSourceTag // NEW: Save the source tag
+                placedAt: firebase.firestore.FieldValue.serverTimestamp(), 
+                sourceTag: orderSourceTag 
             })
             .then(docRef => {
                 lastCommittedOrder = {
                      id: docRef.id, 
                      items: [...currentOrder],
                      total: orderTotal,
+                     contactInfo: contactInfo, 
                      address: address || 'รับเองที่ร้าน',
                      notes: notes, 
-                     sourceTag: orderSourceTag // Store source tag for sharing/local display
+                     sourceTag: orderSourceTag,
+                     contactLineURL: contactLineURL // Store for sharing/local display
                 };
                 
+                // Clear inputs
                 currentOrder = []; 
+                contactInfoInput.value = ''; 
                 deliveryAddressInput.value = '';
                 orderNotesInput.value = ''; 
+                
                 renderCurrentOrder(); 
                 showPaymentQRModal(orderTotal);
             })
@@ -960,9 +989,8 @@
             });
         });
 
-        // 🔥 UPDATED: renderOrderQueue (ใช้ Order ID จาก Firestore และกรองสถานะ) 🔥
+        // 🔥 UPDATED: renderOrderQueue (แสดงปุ่ม Line Chat URL) 🔥
         function renderOrderQueue() {
-            // Filter to show only active orders (คิว, กำลังทำ)
             const displayQueue = orderQueue.filter(order => order.status !== 'เสร็จแล้ว' && order.status !== 'ยกเลิก');
 
             if (displayQueue.length === 0) {
@@ -971,7 +999,7 @@
             }
             
             orderQueueEl.innerHTML = '';
-            let queueNumber = 1; // Start queue numbering at 1
+            let queueNumber = 1; 
             
             displayQueue.forEach(order => {
                 const itemsSummary = order.items.map(item => `${item.name} (${item.size}, หวาน ${item.sweetness}) x${item.quantity}`).join(', ');
@@ -984,26 +1012,38 @@
                 
                 const isCompleted = order.status === 'เสร็จแล้ว' || order.status === 'ยกเลิก';
                 
-                // Determine buttons and queue header based on owner status
                 let actionButtonsHtml = '';
                 let orderHeader = `ออเดอร์ #${order.id.substring(0, 8)}...`;
                 
-                // Notes display
                 let notesDisplay = '';
                 if (order.notes && order.notes.trim() !== '') {
                     notesDisplay = `<p class="text-xs text-red-600 font-semibold mt-1">📝 หมายเหตุ: ${order.notes.trim()}</p>`;
                 }
-
-                // NEW: Source Tag display (only for owner)
-                let sourceTagDisplay = '';
-                if (isOwnerLoggedIn && order.sourceTag && order.sourceTag.trim() !== '') {
-                    sourceTagDisplay = `<p class="text-xs text-purple-600 font-semibold mt-1">🔗 ที่มา: ${order.sourceTag.trim()}</p>`;
-                }
                 
+                // Show contact info only if not the default placeholder
+                let contactDisplay = '';
+                if (order.contactInfo && order.contactInfo !== 'รับเอง_ไม่มีช่องทางติดต่อ') {
+                     contactDisplay = `<p class="text-xs text-gray-800 font-semibold mt-1">📱 ติดต่อ: ${order.contactInfo}</p>`;
+                } else if (order.contactInfo === 'รับเอง_ไม่มีช่องทางติดต่อ') {
+                     contactDisplay = `<p class="text-xs text-red-500 font-semibold mt-1">🚫 ไม่ระบุช่องทางติดต่อ</p>`;
+                }
+
+                let sourceTagDisplay = '';
+                let lineContactButton = ''; // NEW Button variable
+
                 if (isOwnerLoggedIn) {
                     // OWNER VIEW: Show full header and action buttons
                     orderHeader = `คิวที่ #${queueNumber} | ออเดอร์ #${order.id.substring(0, 8)}...`;
                     
+                    // NEW: LINE Contact Button
+                    if (order.contactLineURL) {
+                        lineContactButton = `<a href="${order.contactLineURL}" target="_blank" class="text-xs bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-lg flex items-center space-x-1">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                                                <span>แชท Line</span>
+                                            </a>`;
+                    }
+                    
+                    // Action Buttons (Accept, Done, Cancel)
                     if (order.status === 'คิว') {
                         actionButtonsHtml += `<button class="text-xs bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'กำลังทำ')">รับออเดอร์</button>`;
                     } else if (order.status === 'กำลังทำ') {
@@ -1012,12 +1052,16 @@
                     if (!isCompleted) {
                          actionButtonsHtml += `<button class="text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'ยกเลิก')">ยกเลิก</button>`;
                     }
+
+                    if (order.sourceTag && order.sourceTag.trim() !== '') {
+                        sourceTagDisplay = `<p class="text-xs text-purple-600 font-semibold mt-1">🔗 ที่มา: ${order.sourceTag.trim()}</p>`;
+                    }
                 } else {
                     // CUSTOMER VIEW: Show queue number and status info only
                     orderHeader = `คิวที่ #${queueNumber} | ออเดอร์ #${order.id.substring(0, 8)}...`;
+                    contactDisplay = ''; // Hide contact info from general view
                 }
                 
-                // Only increment the queue number for active orders
                 if (!isCompleted) {
                     queueNumber++;
                 }
@@ -1030,10 +1074,11 @@
                         <div>
                             <h4 class="font-bold text-lg text-teal-700">${orderHeader}</h4> 
                             <p class="text-sm text-gray-600">${itemsSummary}</p>
+                            ${contactDisplay} 
                             <p class="text-xs text-gray-500 mt-1">
                                 <span class="font-semibold">ที่อยู่:</span> ${order.address}
                             </p>
-                            ${notesDisplay} 
+                            ${notesDisplay}
                             ${sourceTagDisplay} 
                         </div>
                         <span class="text-lg font-bold text-teal-600">฿${order.total.toLocaleString('th-TH')}</span>
@@ -1041,6 +1086,7 @@
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-semibold px-2.5 py-0.5 rounded-full ${statusColor}">${order.status}</span>
                         <div class="flex gap-2">
+                            ${lineContactButton} 
                             ${actionButtonsHtml}
                         </div>
                     </div>
@@ -1048,11 +1094,9 @@
                 orderQueueEl.appendChild(orderCard);
             });
         }
-
-        // 🔥 UPDATED: updateOrderStatus (ใช้ Firebase ID/Doc Ref) 🔥
+        
+        // --- Sales & Report Logic (คงเดิม) ---
         function updateOrderStatus(orderId, newStatus) {
-            
-            // NEW: Security check - only allow owner to proceed
             if (!isOwnerLoggedIn) {
                 alert("ปฏิเสธ: คุณไม่มีสิทธิ์จัดการออเดอร์นี้ (กรุณา Login ด้วยสิทธิ์เจ้าของร้าน)");
                 return;
@@ -1091,14 +1135,12 @@
         }
 
         function updateSalesDashboard() {
-            // This function runs only if the owner is logged in and the dashboard is visible
             let salesToday = 0;
             let salesWeek = 0;
             let salesMonth = 0;
             
             menuSalesLog.forEach(log => {
                 const saleDate = log.soldAt ? new Date(log.soldAt.seconds * 1000) : new Date();
-                
                 const totalRevenue = log.price * log.quantity;
 
                 if (isToday(saleDate)) { salesToday += totalRevenue; }
@@ -1112,7 +1154,6 @@
         }
 
         function showMenuReport() {
-            // Ensure only logged-in owners can see the report
             if (!isOwnerLoggedIn) {
                 alert("กรุณาเข้าสู่ระบบด้วยสิทธิ์เจ้าของร้านเพื่อดูรายงาน");
                 return;
@@ -1145,7 +1186,6 @@
         }
 
         // --- Initial setup ---
-        // NEW: Get the source tag when the page loads
         orderSourceTag = getURLParameter('source_tag'); 
         if (orderSourceTag) {
             console.log(`Order source identified: ${orderSourceTag}`);
@@ -1153,7 +1193,7 @@
         
         renderMenu();
         renderCurrentOrder();
-        initFirebaseListeners(); // ** เริ่ม Listener ที่นี่ **
+        initFirebaseListeners();
     </script>
 </body>
 </html>
