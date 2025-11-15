@@ -155,11 +155,8 @@
                     </div>
                     
                     <div class="mb-4">
-
                         <label for="contact-info" class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร/Line ID ที่ติดต่อได้</label>
-
                         <input type="text" id="contact-info" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="เช่น 08x-xxxxxxx หรือ Line ID ของคุณ">
-
                     </div>
                     
                     <div class="mb-4">
@@ -438,7 +435,8 @@
         
         // --- CUSTOMIZABLE LINE LINK ---
         // ** เปลี่ยน 'YOUR_LINE_ID' เป็น Line ID ของร้านคุณ หรือ 'oa_ID' ถ้าใช้ Line OA Link **
-        const LINE_LINK = 'https://line.me/ti/p/khamphi295083'; 
+        // ใช้รูปแบบ R/ti/p/@ID เพื่อให้เป็น Universal Link ที่ดีที่สุด
+        const LINE_LINK = 'https://line.me/R/ti/p/@khamphi295083'; 
 
         let lastCommittedOrder = null;
         let isOwnerLoggedIn = false; 
@@ -463,6 +461,7 @@
         
         /**
          * Generates the Line message and opens the chat window.
+         * * UPDATED: ใช้ Line Scheme (line://) เพื่อบังคับให้เปิดแอป Line/Share Sheet บนมือถือ
          * @param {boolean} openChat - If true, opens the chat window. If false, just returns the URL.
          * @param {string} [manualContactInfo=null] - Optional contact info override for pre-submission check.
          * @param {string} [manualAddress=null] - Optional address override for pre-submission check.
@@ -495,15 +494,24 @@
                 `-- (ลูกค้าสั่งผ่านเว็บสำเร็จแล้ว)`;
 
             const encodedMessage = encodeURIComponent(message);
-            // We use the Line Link defined globally
-            const lineUrl = `${LINE_LINK}?text=${encodedMessage}`;
             
+            // ** 1. URL ที่ใช้บันทึกใน Firestore (สำหรับเจ้าของร้านคลิก) **
+            // ใช้ LINE_LINK ที่เป็น HTTPS Universal Link (เจ้าของร้านดูผ่านเว็บ/คอม)
+            let firestoreLineUrl = `${LINE_LINK}?text=${encodedMessage}`;
+            
+            // ** 2. URL สำหรับปุ่มลูกค้า (บังคับเปิดแอป/Share Sheet) **
+            // ใช้ Line Scheme เพื่อเพิ่มโอกาสในการเปิดแอป Line หรือ Share Sheet (ตามที่ต้องการ)
+            const customerLineSchemeUrl = `line://msg/text/${encodedMessage}`;
+
+
             if (openChat) {
-                window.open(lineUrl, '_blank');
-                alert("โปรดกด 'ส่ง' ใน Line Chat เพื่อยืนยันการสั่งซื้อกับร้านค้า");
+                // ถ้าเป็นปุ่มที่ลูกค้าคลิก (ใน QR Modal) ให้ใช้ Line Scheme เพื่อบังคับเปิดแอป/Share Sheet
+                window.open(customerLineSchemeUrl, '_blank');
+                alert("โปรดกด 'ส่ง' ใน Line Chat (หรือแชร์ไปยัง Line) เพื่อยืนยันการสั่งซื้อกับร้านค้า");
             }
             
-            return lineUrl;
+            // คืนค่า URL ที่ใช้บันทึกใน Firestore (HTTPS Universal Link)
+            return firestoreLineUrl;
         }
 
         // --- Date Helper Functions (คงเดิม) ---
@@ -1200,5 +1208,3 @@
     </script>
 </body>
 </html>
-
-
