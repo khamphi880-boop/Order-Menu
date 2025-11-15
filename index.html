@@ -435,7 +435,7 @@
         
         // --- CUSTOMIZABLE LINE LINK ---
         // ** Line ID: nan570402 **
-        // ใช้รูปแบบ https://line.me/ti/p/ID เพื่อให้เด้งเข้าแชท Line ID ส่วนตัว (สำหรับบันทึกใน Firestore)
+        // ใช้รูปแบบ https://line.me/ti/p/ID สำหรับบันทึกใน Firestore
         const LINE_LINK = 'https://line.me/ti/p/nan570402'; 
 
         let lastCommittedOrder = null;
@@ -459,67 +459,66 @@
             qrPaymentModal.classList.remove('hidden');
         }
         
-        // ประมาณบรรทัดที่ 186: แทนที่ฟังก์ชัน sendLineMessage() ทั้งหมด
-/**
- * Generates the Line message and opens the chat window.
- * * **ULTIMATE FIX: เน้นการคัดลอกข้อความ + เปิดแอป Line เท่านั้น (ไม่ระบุ ID ปลายทาง)**
- * @param {boolean} openChat - If true, opens the chat window.
- * @returns {string} The Line URL for Firestore (HTTPS Link)
- */
-function sendLineMessage(openChat = false, manualContactInfo = null, manualAddress = null, manualTotal = null, manualNotes = null) {
-    // ใช้ lastCommittedOrder ถ้ามี
-    const data = lastCommittedOrder || { 
-        id: 'PENDING',
-        items: currentOrder,
-        total: manualTotal !== null ? manualTotal : currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0),
-        contactInfo: manualContactInfo !== null ? manualContactInfo : contactInfoInput.value.trim(),
-        address: manualAddress !== null ? manualAddress : (deliveryAddressInput.value.trim() || 'รับเองที่ร้าน'),
-        notes: manualNotes !== null ? manualNotes : orderNotesInput.value.trim()
-    };
-    
-    const itemsSummary = data.items.map(item => 
-        `${item.name} (${item.size}, หวาน ${item.sweetness}) x${item.quantity}`
-    ).join(', ');
-    
-    const message = 
-        `✅ *ออเดอร์ใหม่จากเว็บ* #${data.id.substring(0, 8)}:\n` +
-        `รายการ: ${itemsSummary}\n` +
-        `รวม: ฿${data.total.toLocaleString('th-TH')}\n` +
-        `ติดต่อ: ${data.contactInfo}\n` +
-        `ที่อยู่: ${data.address}\n` +
-        (data.notes && data.notes.trim() !== '' ? `หมายเหตุ: ${data.notes}\n` : '') +
-        `-- (ลูกค้าสั่งผ่านเว็บสำเร็จแล้ว)`;
+        /**
+         * Generates the Line message and opens the chat window.
+         * * **ULTIMATE FIX: เน้นการคัดลอกข้อความ + เปิดแอป Line เท่านั้น (ไม่ระบุ ID ปลายทาง)**
+         * @param {boolean} openChat - If true, opens the chat window.
+         * @returns {string} The Line URL for Firestore (HTTPS Link)
+         */
+        function sendLineMessage(openChat = false, manualContactInfo = null, manualAddress = null, manualTotal = null, manualNotes = null) {
+            // ใช้ lastCommittedOrder ถ้ามี
+            const data = lastCommittedOrder || { 
+                id: 'PENDING',
+                items: currentOrder,
+                total: manualTotal !== null ? manualTotal : currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0),
+                contactInfo: manualContactInfo !== null ? manualContactInfo : contactInfoInput.value.trim(),
+                address: manualAddress !== null ? manualAddress : (deliveryAddressInput.value.trim() || 'รับเองที่ร้าน'),
+                notes: manualNotes !== null ? manualNotes : orderNotesInput.value.trim()
+            };
+            
+            const itemsSummary = data.items.map(item => 
+                `${item.name} (${item.size}, หวาน ${item.sweetness}) x${item.quantity}`
+            ).join(', ');
+            
+            const message = 
+                `✅ *ออเดอร์ใหม่จากเว็บ* #${data.id.substring(0, 8)}:\n` +
+                `รายการ: ${itemsSummary}\n` +
+                `รวม: ฿${data.total.toLocaleString('th-TH')}\n` +
+                `ติดต่อ: ${data.contactInfo}\n` +
+                `ที่อยู่: ${data.address}\n` +
+                (data.notes && data.notes.trim() !== '' ? `หมายเหตุ: ${data.notes}\n` : '') +
+                `-- (ลูกค้าสั่งผ่านเว็บสำเร็จแล้ว)`;
 
-    const encodedMessage = encodeURIComponent(message);
-    
-    // ** 1. URL สำหรับเจ้าของร้านคลิกใน Firestore (ยังคงใช้ Line ID เดิม)**
-    // เรายังคงต้องการบันทึก URL ที่มีข้อความฝังอยู่สำหรับเจ้าของร้าน
-    const firestoreLineUrl = `${LINE_LINK}?text=${encodedMessage}`;
-    
-    // ** 2. URL สำหรับปุ่มลูกค้า: ใช้ Line Scheme ที่บังคับเปิดแอป Line เท่านั้น**
-    // line:// (จะเปิดแอป Line ไปที่หน้า Home/Chat ล่าสุด)
-    const customerLineAppUrl = `line://`; // ลบ ID ปลายทางออกทั้งหมด
-    
-    if (openChat) {
-        // 1. คัดลอกข้อความไปที่ Clipboard ทันที
-        navigator.clipboard.writeText(message)
-            .then(() => {
-                // 2. แจ้งเตือนลูกค้าว่าคัดลอกแล้ว และจะเปิดแอป Line
-                alert(`✅ คัดลอกข้อความสรุปบิลเรียบร้อยแล้ว!\n\nโปรดกด OK แล้วเลือกแชท Line ของร้านค้าเพื่อ "วาง" ข้อความ.`);
-                
-                // 3. เปิด Line App (ใช้ Scheme line:// ที่ไม่มีวันขึ้นข้อผิดพลาด "ไม่สามารถเพิ่มเพื่อนได้")
-                window.open(customerLineAppUrl, '_blank');
-            })
-            .catch(err => {
-                // 4. ถ้าคัดลอกล้มเหลว (มือถือรุ่นเก่า)
-                alert(`⚠️ เกิดข้อผิดพลาดในการคัดลอกข้อความอัตโนมัติ \n\nโปรดคัดลอกข้อความด้านล่างนี้ด้วยตนเอง:\n${message}\n\nเมื่อกด OK แล้วแอป Line จะเปิดขึ้นมา`);
-                window.open(customerLineAppUrl, '_blank');
-            });
-    }
-    
-    // คืนค่า URL ที่ใช้บันทึกใน Firestore
-    return firestoreLineUrl;
-}
+            const encodedMessage = encodeURIComponent(message);
+            
+            // ** 1. URL สำหรับเจ้าของร้านคลิกใน Firestore (ยังคงใช้ Line ID เดิม)**
+            // เรายังคงต้องการบันทึก URL ที่มีข้อความสรุปบิลฝังอยู่สำหรับเจ้าของร้าน
+            const firestoreLineUrl = `${LINE_LINK}?text=${encodedMessage}`;
+            
+            // ** 2. URL สำหรับปุ่มลูกค้า: ใช้ Line Scheme ที่บังคับเปิดแอป Line เท่านั้น**
+            // line:// (จะเปิดแอป Line ไปที่หน้า Home/Chat ล่าสุด)
+            const customerLineAppUrl = `line://`; // ไม่มี ID ปลายทาง เพื่อป้องกันข้อผิดพลาด "ไม่สามารถเพิ่มเพื่อนได้"
+            
+            if (openChat) {
+                // 1. คัดลอกข้อความไปที่ Clipboard ทันที
+                navigator.clipboard.writeText(message)
+                    .then(() => {
+                        // 2. แจ้งเตือนลูกค้าว่าคัดลอกแล้ว และจะเปิดแอป Line
+                        alert(`✅ คัดลอกข้อความสรุปบิลเรียบร้อยแล้ว!\n\nโปรดกด OK แล้วเลือกแชท Line ของร้านค้าเพื่อ "วาง" ข้อความ.`);
+                        
+                        // 3. เปิด Line App (ใช้ Scheme line:// ที่ไม่มีวันขึ้นข้อผิดพลาด "ไม่สามารถเพิ่มเพื่อนได้")
+                        window.open(customerLineAppUrl, '_blank');
+                    })
+                    .catch(err => {
+                        // 4. ถ้าคัดลอกล้มเหลว (มือถือรุ่นเก่า)
+                        alert(`⚠️ เกิดข้อผิดพลาดในการคัดลอกข้อความอัตโนมัติ \n\nโปรดคัดลอกข้อความด้านล่างนี้ด้วยตนเอง:\n${message}\n\nเมื่อกด OK แล้วแอป Line จะเปิดขึ้นมา`);
+                        window.open(customerLineAppUrl, '_blank');
+                    });
+            }
+            
+            // คืนค่า URL ที่ใช้บันทึกใน Firestore
+            return firestoreLineUrl;
+        }
 
         // --- Date Helper Functions (คงเดิม) ---
         function isToday(date) {
@@ -1215,4 +1214,3 @@ function sendLineMessage(openChat = false, manualContactInfo = null, manualAddre
     </script>
 </body>
 </html>
-
