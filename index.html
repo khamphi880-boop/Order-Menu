@@ -488,17 +488,27 @@
             
             if (size.includes('Oz.')) {
                 // 1. Clean up "Oz." to "ออนซ์"
-                sizeLabel = size.replace('Oz.', 'ออนซ์').replace('16', '16').replace('22', '22');
+                sizeLabel = size.replace('Oz.', ' ออนซ์');
                 
-                // 2. Custom rule: Add "เย็น" to "16 Oz." if it is ONLY "16 Oz." (e.g., in standard menu and no 'ปั่น' version for 16oz exists)
-                if (size === '16 Oz.' && item.prices['16 Oz. ปั่น']) {
-                    sizeLabel = '16 ออนซ์ เย็น';
-                } else if (size === '16 Oz.' && item.prices['22 Oz. เย็น'] && !item.prices['16 Oz. ปั่น']) {
+                // 2. Custom rule: Add "เย็น" to "16 Oz." if it is ONLY "16 Oz." 
+                // Check if '16 Oz.' exists AND if there are other size options (suggesting '16 Oz.' is the base/cold 16oz)
+                const hasOther16Oz = item.prices['16 Oz. ปั่น'] || item.prices['16 Oz. เย็น'];
+                const has22OzOptions = item.prices['22 Oz. เย็น'] || item.prices['22 Oz. ปั่น'];
+
+                if (size === '16 Oz.' && (hasOther16Oz || has22OzOptions)) {
                     sizeLabel = '16 ออนซ์ เย็น';
                 }
                 
-                // 3. Keep "ปั่น" explicit
-                sizeLabel = sizeLabel.replace('ปั่น', 'ปั่น');
+                // 3. Keep specific suffixes ('เย็น' and 'ปั่น') if they exist in the original size string
+                if (size.includes('เย็น')) {
+                     sizeLabel = sizeLabel.replace(' เย็น', ' เย็น'); // Keep ' เย็น'
+                } else if (size.includes('ปั่น')) {
+                     sizeLabel = sizeLabel.replace(' ปั่น', ' ปั่น'); // Keep ' ปั่น'
+                }
+
+                // Final cleanup: remove potential double spaces and leading/trailing spaces
+                sizeLabel = sizeLabel.replace(/\s\s+/g, ' ').trim();
+                
             }
             // For Coffee size like 'เย็น' or 'ปั่น', use the exact name
             else if (size === 'เย็น' || size === 'ปั่น') {
