@@ -459,16 +459,12 @@
             qrPaymentModal.classList.remove('hidden');
         }
         
-       // ประมาณบรรทัดที่ 186: แทนที่ฟังก์ชัน sendLineMessage() ทั้งหมด
+      // ประมาณบรรทัดที่ 186: แทนที่ฟังก์ชัน sendLineMessage() ทั้งหมด
 /**
  * Generates the Line message and opens the chat window.
- * * **UPDATED: ใช้ Line Scheme (line://) และคัดลอกข้อความไปที่ Clipboard ทันที**
- * @param {boolean} openChat - If true, opens the chat window. If false, just returns the URL.
- * @param {string} [manualContactInfo=null] - Optional contact info override for pre-submission check.
- * @param {string} [manualAddress=null] - Optional address override for pre-submission check.
- * @param {number} [manualTotal=null] - Optional total override for pre-submission check.
- * @param {string} [manualNotes=null] - Optional notes override for pre-submission check.
- * @returns {string} The Line URL for chat.
+ * * **FINAL FIX: เน้นการคัดลอกข้อความและเปิดแอป Line โดยตรง**
+ * @param {boolean} openChat - If true, opens the chat window.
+ * @returns {string} The Line URL for Firestore (HTTPS Link)
  */
 function sendLineMessage(openChat = false, manualContactInfo = null, manualAddress = null, manualTotal = null, manualNotes = null) {
     // ใช้ lastCommittedOrder ถ้ามี
@@ -496,28 +492,28 @@ function sendLineMessage(openChat = false, manualContactInfo = null, manualAddre
 
     const encodedMessage = encodeURIComponent(message);
     
-    // ** URL สำหรับเจ้าของร้านคลิกใน Firestore (ยังต้องมีข้อความฝังอยู่)**
+    // ** URL สำหรับเจ้าของร้านคลิกใน Firestore (ใช้ LINE_LINK เดิม)**
     const firestoreLineUrl = `${LINE_LINK}?text=${encodedMessage}`;
     
-    // ** URL สำหรับปุ่มลูกค้า: เน้นเปิดแอป Line ID โดยตรง (Line Scheme)**
-    // (ใช้รูปแบบที่มั่นใจว่า Line App จะเปิดได้ แม้ว่าข้อความจะยาว)
-    const customerLineAppUrl = `line://ti/p/${LINE_LINK.split('/').pop()}`; // line://ti/p/nan570402
-    
-    // ** Line ID ที่ถูกต้อง: nan570402 (ใช้สำหรับกรณีที่ Line App ไม่เปิด) **
+    // ** URL สำหรับปุ่มลูกค้า: ใช้ Line Scheme เพื่อเปิดแอป Line ที่ติดตั้งไว้**
+    // line:// (เปิด App Line) /ti/p/ (ไปยัง ID) / nan570402
+    // ต้องถอด HTTPS ออกก่อน
+    const lineIDPath = LINE_LINK.substring(LINE_LINK.lastIndexOf('/') + 1);
+    const customerLineAppUrl = `line://ti/p/${lineIDPath}`; 
     
     if (openChat) {
         // 1. คัดลอกข้อความไปที่ Clipboard ทันที
         navigator.clipboard.writeText(message)
             .then(() => {
                 // 2. แจ้งเตือนลูกค้าว่าคัดลอกแล้ว และจะเปิดแอป Line
-                alert(`✅ คัดลอกข้อความสรุปบิลเรียบร้อยแล้ว!\n\nโปรดกด OK แล้วไป "วาง" ข้อความในแชท Line ที่จะเปิดขึ้นมา.`);
+                alert(`✅ คัดลอกข้อความสรุปบิลเรียบร้อยแล้ว!\n\nโปรดกด OK แล้ว "วาง" ข้อความในแชท Line ที่เปิดขึ้นมา.`);
                 
-                // 3. เปิด Line App (ใช้ Line Scheme ที่มีโอกาสทำงานสูง)
+                // 3. เปิด Line App (ใช้ Line Scheme เพื่อเรียกแอป)
                 window.open(customerLineAppUrl, '_blank');
             })
             .catch(err => {
-                // 4. ถ้าคัดลอกล้มเหลว
-                alert(`⚠️ เกิดข้อผิดพลาดในการคัดลอกข้อความ โปรดคัดลอกข้อความด้านล่างนี้ด้วยตนเอง:\n\n${message}`);
+                // 4. ถ้าคัดลอกล้มเหลว (มือถือรุ่นเก่า)
+                alert(`⚠️ เกิดข้อผิดพลาดในการคัดลอกข้อความอัตโนมัติ \n\nโปรดคัดลอกข้อความด้านล่างนี้ด้วยตนเอง:\n${message}\n\nเมื่อกด OK แล้วแอป Line จะเปิดขึ้นมา`);
                 window.open(customerLineAppUrl, '_blank');
             });
     }
@@ -1221,4 +1217,5 @@ function sendLineMessage(openChat = false, manualContactInfo = null, manualAddre
     </script>
 </body>
 </html>
+
 
