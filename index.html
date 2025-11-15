@@ -26,6 +26,7 @@
             cursor: pointer;
             transition: transform 0.1s;
             box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            position: relative; /* For image upload button positioning */
         }
         .main-menu-card:hover {
             transform: scale(1.02);
@@ -71,6 +72,34 @@
             height: 256px;
             margin: 0 auto;
         }
+        
+        /* Image Placeholder Style */
+        .menu-image {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 0.25rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* Image Upload Button Style (Overlay) */
+        .upload-img-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            z-index: 10;
+            cursor: pointer;
+            display: none; /* Hidden by default, shown by JS */
+        }
+        .main-menu-card:hover .upload-img-btn {
+            display: block;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -80,7 +109,15 @@
             <h1 class="text-4xl font-bold text-teal-600">ระบบจัดการออเดอร์</h1>
             <p class="text-gray-500">ใช้ Firebase Firestore สำหรับจัดการคิวแบบ Realtime</p>
         </header>
-
+        
+        <div class="flex justify-end mb-4">
+            <button id="owner-login-btn" onclick="showOwnerLogin()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition duration-300">
+                👤 Login (Owner)
+            </button>
+            <button id="owner-logout-btn" onclick="firebase.auth().signOut()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition duration-300 hidden">
+                🚪 Logout
+            </button>
+        </div>
         <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
             <h2 class="text-2xl font-semibold mb-4 border-b pb-2">📊 แดชบอร์ดสรุปยอดขาย</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-4">
@@ -179,7 +216,7 @@
                 
                 <div class="w-full p-2 border-t pt-2">
                     <p class="text-base text-gray-700 font-semibold">
-                        ชื่อบัญชี: <span class="font-bold text-gray-900">น.ส.นฤญา นาเมืองรักษ์</span>
+                        ชื่อบัญชี: <span class="font-bold text-gray-900">น.ส.นฤตญา นาเมืองรักษ์</span>
                     </p>
                 </div>
             </div>
@@ -198,10 +235,47 @@
             </button>
         </div>
     </div>
+    
+    <div id="image-upload-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 shadow-xl w-11/12 max-w-sm">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-xl font-bold text-indigo-600">🖼️ จัดการรูปภาพเมนู</h3>
+                <button onclick="document.getElementById('image-upload-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <p class="text-gray-700 mb-4" id="upload-menu-name">สำหรับเมนู: **[ชื่อเมนู]**</p>
+            <div class="p-4 bg-yellow-50 rounded-lg text-sm mb-4">
+                **💡 โหมดจำกัด (Spark Plan):** คุณสามารถเพิ่ม URL รูปภาพที่มีอยู่แล้วเพื่อแสดงผล แต่จะไม่สามารถอัปโหลดไฟล์จากเครื่องได้โดยตรง (เนื่องจากต้องใช้ Firebase Storage และแผน Blaze)
+            </div>
+            
+            <label for="menu-image-url" class="block text-sm font-medium text-gray-700 mb-1">URL รูปภาพ (จากเว็บอื่น):</label>
+            <input type="text" id="menu-image-url" placeholder="Paste image URL here" class="w-full mb-4 p-2 border border-gray-300 rounded-lg focus:ring-indigo-500">
+            
+            <button onclick="saveImageUrlToMenu()" id="save-url-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg transition duration-300">
+                💾 บันทึก URL รูปภาพ
+            </button>
+        </div>
+    </div>
+    
+    <div id="owner-login-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 shadow-xl w-11/12 max-w-sm">
+            <h3 class="text-xl font-bold text-indigo-600 mb-4">🔑 เข้าสู่ระบบ (เจ้าของร้าน)</h3>
+            <input type="email" id="owner-email" placeholder="Email" class="w-full mb-3 p-2 border border-gray-300 rounded-lg focus:ring-indigo-500">
+            <input type="password" id="owner-password" placeholder="Password" class="w-full mb-4 p-2 border border-gray-300 rounded-lg focus:ring-indigo-500">
+            <button onclick="ownerLogin()" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 rounded-lg transition duration-300">
+                เข้าสู่ระบบ
+            </button>
+            <button onclick="document.getElementById('owner-login-modal').classList.add('hidden')" class="mt-3 w-full text-sm text-gray-500 hover:text-gray-700">
+                ยกเลิก
+            </button>
+        </div>
+    </div>
+
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script> 
-
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script>
         // 2. โค้ด Configuration ของโปรเจกต์คุณ (ใช้ค่าเดิม)
         const firebaseConfig = {
@@ -216,6 +290,8 @@
         // 3. Initialize App และ Firestore
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
+        const auth = firebase.auth(); // NEW: Auth service
+        // const storage = firebase.storage(); // NEW: Storage service (ถูกถอดออก)
         
         // ====================================================================
         // 📝 START: โค้ด JavaScript ระบบจัดการออเดอร์ (ปรับเป็น Firebase) 📝
@@ -223,35 +299,35 @@
 
         // *** Menu Data (Full lists) *** (ใช้ข้อมูลเดิมทั้งหมด)
         const menuData = [
-            { id: 1, name: 'เผือก', prices: { '16 Oz. เย็น': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 2, name: 'แคนตาลูป', prices: { '16 Oz. เย็น': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 3, name: 'นมสด', prices: { '16 Oz. เย็น': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 4, name: 'นมน้ำผึ้ง', prices: { '16 Oz. เย็น': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 5, name: 'นมวานิลลา', prices: { '16 Oz. เย็น': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 6, name: 'นมคาราเมล', prices: { '16 Oz. เย็น': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 7, name: 'นมเย็น/นมชมพู', prices: { '16 Oz.เย็น': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 8, name: 'นมบราวน์ชูการ์', prices: { '16 Oz. เย็น': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 9, name: 'นมสด งาดำ', prices: { '16 Oz. เย็น': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 10, name: 'นมมิ้นท์', prices: { '16 Oz. เย็น': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 11, name: 'โกโก้', prices: { '16 Oz. เย็น': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 12, name: 'นมมิ้นท์โกโก้', prices: { '16 Oz. เย็น': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 13, name: 'ช็อกโกแลต', prices: { '16 Oz. เย็น': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
-            { id: 14, name: 'นมมิ้นท์ช็อก', prices: { '16 Oz. เย็น': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
-            { id: 15, name: 'นมสดโอริโอ้', prices: { '16 Oz. เย็น': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 60 } },
-            { id: 16, name: 'นมกล้วย', prices: { '16 Oz. เย็น': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 60 } },
-            { id: 17, name: 'กล้วยช็อก', prices: { '16 Oz. เย็น': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
-            { id: 18, name: 'กล้วยโกโก้', prices: { '16 Oz. เย็น': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
+            { id: 1, name: 'เผือก', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 2, name: 'แคนตาลูป', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 3, name: 'นมสด', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 4, name: 'นมน้ำผึ้ง', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 5, name: 'นมวานิลลา', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 6, name: 'นมคาราเมล', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 7, name: 'นมเย็น/นมชมพู', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 8, name: 'นมบราวน์ชูการ์', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 9, name: 'นมสด งาดำ', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 10, name: 'นมมิ้นท์', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 11, name: 'โกโก้', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 12, name: 'นมมิ้นท์โกโก้', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 13, name: 'ช็อกโกแลต', prices: { '16 Oz.': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
+            { id: 14, name: 'นมมิ้นท์ช็อก', prices: { '16 Oz.': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
+            { id: 15, name: 'นมสดโอริโอ้', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 60 } },
+            { id: 16, name: 'นมกล้วย', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 60 } },
+            { id: 17, name: 'กล้วยช็อก', prices: { '16 Oz.': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
+            { id: 18, name: 'กล้วยโกโก้', prices: { '16 Oz.': 40, '22 Oz. เย็น': 50, '22 Oz. ปั่น': 65 } },
             { id: 19, name: 'มะพร้าวนมสด', prices: { '22 Oz. ปั่น': 55 } },
-            { id: 20, name: 'ชาไทย (ไต้หวัน)', prices: { '16 Oz. เย็น': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 21, name: 'ชาไทย (ใบชา)', prices: { '16 Oz. เย็น': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 22, name: 'ชาไทย ลาเต้ มะพร้าว', prices: { '16 Oz. เย็น': 45, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
-            { id: 23, name: 'ชาเขียว (ไม่กลิ่นมะลิ)', prices: { '16 Oz. เย็น': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 24, name: 'ชาเขียวลาเต้ มะพร้าว', prices: { '16 Oz. เย็น': 45, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
-            { id: 25, name: 'ชาเขียวมะนาว', prices: { '16 Oz. เย็น': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 26, name: 'ชามะนาว', prices: { '16 Oz. เย็น': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
-            { id: 27, name: 'ชาพีช', prices: { '16 Oz. เย็น': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 28, name: 'ชามะลิ', prices: { '16 Oz. เย็น': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
-            { id: 29, name: 'ชาลิ้นจี่', prices: { '16 Oz. เย็น': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 20, name: 'ชาไทย (ไต้หวัน)', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 21, name: 'ชาไทย (ใบชา)', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 22, name: 'ชาไทย ลาเต้ มะพร้าว', prices: { '16 Oz.': 45, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
+            { id: 23, name: 'ชาเขียว (ไม่กลิ่นมะลิ)', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 24, name: 'ชาเขียวลาเต้ มะพร้าว', prices: { '16 Oz.': 45, '22 Oz. เย็น': 55, '22 Oz. ปั่น': 60 } },
+            { id: 25, name: 'ชาเขียวมะนาว', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 26, name: 'ชามะนาว', prices: { '16 Oz.': 30, '22 Oz. เย็น': 40, '22 Oz. ปั่น': 45 } },
+            { id: 27, name: 'ชาพีช', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 28, name: 'ชามะลิ', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
+            { id: 29, name: 'ชาลิ้นจี่', prices: { '16 Oz.': 35, '22 Oz. เย็น': 45, '22 Oz. ปั่น': 50 } },
         ];
         
         const matchaMenuData = [
@@ -306,8 +382,8 @@
         ];
 
         const smoothieYogurtData = [
-            { id: -301, name: 'กีวี่', prices: { '16 Oz เย็น. ปั่น': 50, '22 Oz. ปั่น': 60 } },
-            { id: -302, name: 'สตอเบอร์รี่', prices: { '16 Oz เย็น. ปั่น': 50, '22 Oz. ปั่น': 60 } },
+            { id: -301, name: 'กีวี่', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
+            { id: -302, name: 'สตอเบอร์รี่', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
             { id: -303, name: 'พีช', prices: { '16 Oz. ปั่น': 50, '22 Oz. ปั่น': 60 } },
             { id: -304, name: 'บลูเบอร์รี่', prices: { '16 Oz. ปั่น': 55, '22 Oz. ปั่น': 65 } },
             { id: -305, name: 'มิกซ์เบอร์รี่', prices: { '16 Oz. ปั่น': 55, '22 Oz. ปั่น': 65 } },
@@ -324,6 +400,7 @@
         let currentOrder = [];
         let orderQueue = []; 
         let menuSalesLog = []; 
+        let currentMenuDoc = null; // NEW: To store the currently selected menu item for image upload
 
         const menuGrid = document.getElementById('menu-grid');
         const currentOrderItemsEl = document.getElementById('current-order-items');
@@ -341,6 +418,7 @@
         const qrTotalAmountEl = document.getElementById('qr-total-amount');
 
         let lastCommittedOrder = null;
+        let isOwnerLoggedIn = false; // NEW: Flag for owner status
 
         // Helper function to find item data from all menus (คงเดิม)
         function getItemDataById(itemId) {
@@ -395,30 +473,32 @@
             }, error => {
                 console.error("Firebase Sales Listener Error:", error);
             });
+            
+            // NEW: Auth listener for owner status
+            auth.onAuthStateChanged(handleAuthChange);
         }
         
         // --- Core Application Logic (ปรับปรุงเพื่อรองรับการเพิ่มจากหน้าหลัก) ---
         
         // Function to create a simple menu button
         function createMenuItemButton(item, size, price, colorClass) {
-            // *** UPDATED LOGIC HERE ***
+            // *** UPDATED LOGIC HERE (Size Label) ***
             let sizeLabel = size;
             
             if (size.includes('Oz.')) {
-                // 1. Clean up "Oz." to "ออนซ์" and separate numbers
+                // 1. Clean up "Oz." to "ออนซ์"
                 sizeLabel = size.replace('Oz.', 'ออนซ์').replace('16', '16').replace('22', '22');
                 
-                // 2. Custom rule: Add "เย็น" to "16 Oz." if it is ONLY "16 Oz." (i.e., not a 'ปั่น' version of the same drink)
-                // We check if the price object has a '16 Oz. ปั่น' key. If it exists, then '16 Oz.' is assumed to be '16 Oz. เย็น'.
-                // If it doesn't exist, we rely on the original size text.
+                // 2. Custom rule: Add "เย็น" to "16 Oz." if it is ONLY "16 Oz." (e.g., in standard menu and no 'ปั่น' version for 16oz exists)
                 if (size === '16 Oz.' && item.prices['16 Oz. ปั่น']) {
                     sizeLabel = '16 ออนซ์ เย็น';
-                } else if (size === '16 Oz.' && !item.prices['22 Oz. เย็น'] && !item.prices['22 Oz. ปั่น']) {
-                    // Special case for simplicity if 16 Oz. is the only option (e.g., in standard section)
-                    sizeLabel = '16 ออนซ์';
+                } else if (size === '16 Oz.' && item.prices['22 Oz. เย็น'] && !item.prices['16 Oz. ปั่น']) {
+                    sizeLabel = '16 ออนซ์ เย็น';
                 }
+                
+                // 3. Keep "ปั่น" explicit
+                sizeLabel = sizeLabel.replace('ปั่น', 'ปั่น');
             }
-            
             // For Coffee size like 'เย็น' or 'ปั่น', use the exact name
             else if (size === 'เย็น' || size === 'ปั่น') {
                 sizeLabel = size;
@@ -430,8 +510,21 @@
             // NEW FUNCTION CALL: Pass itemId, size, and price directly
             menuItem.setAttribute('onclick', `addToOrder(${item.id}, '${size.replace(/'/g, "\\'")}', ${price})`);
 
+            let imageHtml = '';
+            if (item.imageUrl) {
+                 imageHtml = `<img src="${item.imageUrl}" alt="${item.name} image" class="menu-image">`;
+            } else {
+                 imageHtml = `<div class="menu-image flex items-center justify-center text-xs text-gray-400 bg-gray-100">ไม่มีรูปภาพ</div>`;
+            }
+            
+            // NEW: Upload Button (Hidden by default, shown by JS when owner logs in)
+            // Note: We pass the menu ID for future use when enabling Storage
+            const uploadBtnHtml = `<span class="upload-img-btn text-xs" style="display: none;" onclick="event.stopPropagation(); showImageUploadModal(${item.id}, '${item.name}', '${size.replace(/'/g, "\\'")}', ${price})">📷</span>`;
+
             // *** แก้ไข: ลบวงเล็บและขนาดออกจากบรรทัดชื่อเมนู (item.name) ***
             menuItem.innerHTML = `
+                ${uploadBtnHtml}
+                ${imageHtml}
                 <p class="menu-name">${item.name}</p>
                 <p class="text-gray-500 text-xs">${sizeLabel}</p>
                 <p class="menu-price-tag text-teal-600">฿${price.toLocaleString('th-TH')}</p>
@@ -454,6 +547,11 @@
                     container.appendChild(button);
                 });
             });
+            
+            // Ensure owner upload buttons are visible if logged in
+            if (isOwnerLoggedIn) {
+                document.querySelectorAll('.upload-img-btn').forEach(btn => btn.style.display = 'block');
+            }
         }
 
 
@@ -502,7 +600,6 @@
             });
         }
         
-        // 🔥 UPDATED: addToOrder function to accept size and price directly 🔥
         function addToOrder(itemId, size = null, price = null) {
             const item = getItemDataById(itemId);
             if (!item) return;
@@ -548,7 +645,78 @@
             renderCurrentOrder();
         }
         
-        // --- The rest of the functions remain the same as the previous correct version ---
+        // --- Owner Authentication & Image URL Saving Logic (No Storage Used) ---
+        
+        function showOwnerLogin() {
+            document.getElementById('owner-login-modal').classList.remove('hidden');
+        }
+        
+        function ownerLogin() {
+            const email = document.getElementById('owner-email').value;
+            const password = document.getElementById('owner-password').value;
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    alert("เข้าสู่ระบบสำเร็จ!");
+                    document.getElementById('owner-login-modal').classList.add('hidden');
+                })
+                .catch((error) => {
+                    alert(`เข้าสู่ระบบล้มเหลว: ${error.message}`);
+                });
+        }
+        
+        function handleAuthChange(user) {
+            if (user) {
+                // Owner is logged in
+                isOwnerLoggedIn = true;
+                document.getElementById('owner-login-btn').classList.add('hidden');
+                document.getElementById('owner-logout-btn').classList.remove('hidden');
+                document.querySelectorAll('.upload-img-btn').forEach(btn => btn.style.display = 'block');
+                
+                // Optional: Show status
+                alert(`ผู้ใช้: ${user.email} เข้าสู่ระบบแล้ว (สิทธิ์เจ้าของร้าน)`);
+            } else {
+                // Owner is logged out
+                isOwnerLoggedIn = false;
+                document.getElementById('owner-login-btn').classList.remove('hidden');
+                document.getElementById('owner-logout-btn').classList.add('hidden');
+                document.querySelectorAll('.upload-img-btn').forEach(btn => btn.style.display = 'none');
+            }
+        }
+        
+        function showImageUploadModal(itemId, itemName) {
+            currentMenuDoc = itemId; 
+            const item = getItemDataById(itemId);
+            
+            document.getElementById('upload-menu-name').textContent = `สำหรับเมนู: **${itemName}** (ID: ${itemId})`;
+            document.getElementById('menu-image-url').value = item.imageUrl || ''; // Pre-fill current URL if exists
+            document.getElementById('image-upload-modal').classList.remove('hidden');
+        }
+
+        // NEW: Function to save image URL directly to the local menu data (NO FIREBASE STORAGE)
+        function saveImageUrlToMenu() {
+            if (!currentMenuDoc) return alert("Error: ไม่พบเมนูที่เลือก");
+            
+            const imageUrl = document.getElementById('menu-image-url').value.trim();
+            
+            // Find the corresponding item in the menu data array
+            const itemIndex = allMenuData.findIndex(item => item.id === currentMenuDoc);
+            if (itemIndex === -1) {
+                alert("Error: ไม่พบเมนูในข้อมูล");
+                return;
+            }
+            
+            // Update the local data with the imageUrl
+            allMenuData[itemIndex].imageUrl = imageUrl;
+            
+            // Re-render the menu to show the image
+            renderMenu(); 
+            
+            alert("บันทึก URL รูปภาพสำเร็จ! (ข้อมูลจะหายไปเมื่อรีเฟรชหน้า หากไม่ได้บันทึกลง Firestore)");
+            document.getElementById('image-upload-modal').classList.add('hidden');
+        }
+        
+        // --- The rest of the functions (renderCurrentOrder, updateOrderStatus, etc.) are standard ---
 
         function renderCurrentOrder() {
             if (currentOrder.length === 0) {
@@ -865,5 +1033,3 @@
     </script>
 </body>
 </html>
-
-
