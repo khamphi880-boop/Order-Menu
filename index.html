@@ -154,6 +154,10 @@
                         <p class="text-gray-400 text-center mt-4">เลือกเมนูจากด้านซ้ายเพื่อเริ่ม...</p>
                     </div>
                     
+                    <div class="mb-4">
+                        <label for="contact-info" class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร/Line ID ที่ติดต่อได้</label>
+                        <input type="text" id="contact-info" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="เช่น 08x-xxxxxxx หรือ Line ID ของคุณ">
+                    </div>
                     
                     <div class="mb-4">
                         <label for="delivery-address" class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่จัดส่ง (หากมี, เว้นว่างหากรับเอง)</label>
@@ -431,8 +435,7 @@
         
         // --- CUSTOMIZABLE LINE LINK ---
         // ** เปลี่ยน 'YOUR_LINE_ID' เป็น Line ID ของร้านคุณ หรือ 'oa_ID' ถ้าใช้ Line OA Link **
-       // ⚠️ ต้องมี @ นำหน้า ID ร้านค้าของคุณ
-const LINE_LINK = 'https://line.me/R/ti/p/khamphi295083';
+        const LINE_LINK = 'https://line.me/ti/p/~YOUR_LINE_ID'; 
 
         let lastCommittedOrder = null;
         let isOwnerLoggedIn = false; 
@@ -1194,7 +1197,3 @@ const LINE_LINK = 'https://line.me/R/ti/p/khamphi295083';
     </script>
 </body>
 </html>
-
-
-
-
