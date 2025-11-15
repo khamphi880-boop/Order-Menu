@@ -889,44 +889,55 @@
         // 🔥 UPDATED: Submit Order (กลับมาใช้ Firestore) 🔥
         submitOrderBtn.addEventListener('click', () => {
             const orderTotal = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
-
-            if (currentOrder.length > 0) {
-                const address = deliveryAddressInput.value.trim();
-                const notes = orderNotesInput.value.trim(); // NEW: Get notes value
-                const isPickup = address === '';
-                
-                if (isPickup) {
-                     if (!confirm("คุณไม่ได้กรอกที่อยู่ จะถือเป็น 'รับเองที่ร้าน' ใช่หรือไม่?")) { return; }
-                }
-
-                db.collection("orders").add({ 
-                    items: currentOrder,
-                    total: orderTotal,
-                    address: address || 'รับเองที่ร้าน',
-                    notes: notes, // NEW: Add notes field
-                    status: 'คิว',
-                    placedAt: firebase.firestore.FieldValue.serverTimestamp(), // ใช้เวลาจาก Server
-                })
-                .then(docRef => {
-                    lastCommittedOrder = {
-                         id: docRef.id, 
-                         items: [...currentOrder],
-                         total: orderTotal,
-                         address: address || 'รับเองที่ร้าน',
-                         notes: notes, // Store notes for share summary
-                    };
-                    
-                    currentOrder = []; 
-                    deliveryAddressInput.value = '';
-                    orderNotesInput.value = ''; // NEW: Clear notes input
-                    renderCurrentOrder(); 
-                    showPaymentQRModal(orderTotal);
-                })
-                .catch(error => {
-                    console.error("Error adding document: ", error);
-                    alert("ไม่สามารถส่งออเดอร์ได้ กรุณาลองใหม่");
-                });
+            const address = deliveryAddressInput.value.trim(); // Get address
+            const notes = orderNotesInput.value.trim(); 
+            
+            // NEW: 1. CHECK IF CART IS EMPTY
+            if (currentOrder.length === 0) {
+                 alert("กรุณาเลือกเมนูอย่างน้อย 1 รายการก่อนส่งออเดอร์");
+                 return; 
             }
+            
+            // NEW: 2. CHECK DELIVERY ADDRESS
+            const isPickup = address === '';
+            
+            if (isPickup) {
+                 // If address is empty, ask for confirmation to treat it as 'Pickup'
+                 if (!confirm("คุณไม่ได้กรอกที่อยู่ จะถือเป็น 'รับเองที่ร้าน' ใช่หรือไม่? (กด OK เพื่อยืนยัน)")) { 
+                     // If user presses Cancel, stop the submission
+                     return; 
+                 }
+            }
+
+            // --- Proceed with submission ---
+            
+            db.collection("orders").add({ 
+                items: currentOrder,
+                total: orderTotal,
+                address: address || 'รับเองที่ร้าน',
+                notes: notes, 
+                status: 'คิว',
+                placedAt: firebase.firestore.FieldValue.serverTimestamp(), // ใช้เวลาจาก Server
+            })
+            .then(docRef => {
+                lastCommittedOrder = {
+                     id: docRef.id, 
+                     items: [...currentOrder],
+                     total: orderTotal,
+                     address: address || 'รับเองที่ร้าน',
+                     notes: notes, 
+                };
+                
+                currentOrder = []; 
+                deliveryAddressInput.value = '';
+                orderNotesInput.value = ''; 
+                renderCurrentOrder(); 
+                showPaymentQRModal(orderTotal);
+            })
+            .catch(error => {
+                console.error("Error adding document: ", error);
+                alert("ไม่สามารถส่งออเดอร์ได้ กรุณาลองใหม่");
+            });
         });
 
         // 🔥 UPDATED: renderOrderQueue (ใช้ Order ID จาก Firestore และกรองสถานะ) 🔥
@@ -956,8 +967,7 @@
                 // Determine buttons and queue header based on owner status
                 let actionButtonsHtml = '';
                 let orderHeader = `ออเดอร์ #${order.id.substring(0, 8)}...`;
-                let statusInfoForCustomer = '';
-
+                
                 // NEW: Notes display
                 let notesDisplay = '';
                 if (order.notes && order.notes.trim() !== '') {
