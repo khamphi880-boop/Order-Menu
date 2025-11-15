@@ -118,7 +118,7 @@
                 🚪 Logout
             </button>
         </div>
-        <div class="bg-white p-6 rounded-2xl shadow-lg mb-8">
+        <div id="sales-dashboard-container" class="bg-white p-6 rounded-2xl shadow-lg mb-8" style="display: none;">
             <h2 class="text-2xl font-semibold mb-4 border-b pb-2">📊 แดชบอร์ดสรุปยอดขาย</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-4">
                 <div class="bg-blue-50 p-4 rounded-xl">
@@ -276,13 +276,14 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script> 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+
     <script>
-        // 2. โค้ด Configuration ของโปรเจกต์คุณ (ใช้ค่าเดิม)
+        // 2. โค้ด Configuration ของโปรเจกต์คุณ (ใช้ค่าเดิม) 
         const firebaseConfig = {
-            apiKey: "AIzaSyDztPWzAu8Lz8olg_dhlCLBQVEyjTQqpOk", //
-            authDomain: "ordermanagement-f6724.firebaseapp.com", //
-            projectId: "ordermanagement-f6724", //
-            storageBucket: "ordermanagement-f6724.appspot.com", //
+            apiKey: "AIzaSyDztPWzAu8Lz8olg_dhlCLBQVEyjTQqpOk", 
+            authDomain: "ordermanagement-f6724.firebaseapp.com", 
+            projectId: "ordermanagement-f6724", 
+            storageBucket: "ordermanagement-f6724.appspot.com", 
             messagingSenderId: "321286666597",
             appId: "1:321286666597:web:062fef7df8fc456fec098c",
         };
@@ -291,7 +292,6 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth(); // NEW: Auth service
-        // const storage = firebase.storage(); // NEW: Storage service (ถูกถอดออก)
         
         // ====================================================================
         // 📝 START: โค้ด JavaScript ระบบจัดการออเดอร์ (ปรับเป็น Firebase) 📝
@@ -400,7 +400,7 @@
         let currentOrder = [];
         let orderQueue = []; 
         let menuSalesLog = []; 
-        let currentMenuDoc = null; // NEW: To store the currently selected menu item for image upload
+        let currentMenuDoc = null; 
 
         const menuGrid = document.getElementById('menu-grid');
         const currentOrderItemsEl = document.getElementById('current-order-items');
@@ -409,6 +409,7 @@
         const orderQueueEl = document.getElementById('order-queue');
         const deliveryAddressInput = document.getElementById('delivery-address');
 
+        const salesDashboardContainer = document.getElementById('sales-dashboard-container'); // NEW
         const salesTodayEl = document.getElementById('sales-today');
         const salesWeekEl = document.getElementById('sales-week');
         const salesMonthEl = document.getElementById('sales-month');
@@ -418,7 +419,7 @@
         const qrTotalAmountEl = document.getElementById('qr-total-amount');
 
         let lastCommittedOrder = null;
-        let isOwnerLoggedIn = false; // NEW: Flag for owner status
+        let isOwnerLoggedIn = false; 
 
         // Helper function to find item data from all menus (คงเดิม)
         function getItemDataById(itemId) {
@@ -518,7 +519,6 @@
             }
             
             // NEW: Upload Button (Hidden by default, shown by JS when owner logs in)
-            // Note: We pass the menu ID for future use when enabling Storage
             const uploadBtnHtml = `<span class="upload-img-btn text-xs" style="display: none;" onclick="event.stopPropagation(); showImageUploadModal(${item.id}, '${item.name}', '${size.replace(/'/g, "\\'")}', ${price})">📷</span>`;
 
             // *** แก้ไข: ลบวงเล็บและขนาดออกจากบรรทัดชื่อเมนู (item.name) ***
@@ -671,6 +671,9 @@
                 isOwnerLoggedIn = true;
                 document.getElementById('owner-login-btn').classList.add('hidden');
                 document.getElementById('owner-logout-btn').classList.remove('hidden');
+                
+                // Show dashboard and upload buttons
+                salesDashboardContainer.style.display = 'block'; // NEW: Show Sales Dashboard
                 document.querySelectorAll('.upload-img-btn').forEach(btn => btn.style.display = 'block');
                 
                 // Optional: Show status
@@ -680,6 +683,9 @@
                 isOwnerLoggedIn = false;
                 document.getElementById('owner-login-btn').classList.remove('hidden');
                 document.getElementById('owner-logout-btn').classList.add('hidden');
+                
+                // Hide dashboard and upload buttons
+                salesDashboardContainer.style.display = 'none'; // NEW: Hide Sales Dashboard
                 document.querySelectorAll('.upload-img-btn').forEach(btn => btn.style.display = 'none');
             }
         }
@@ -870,7 +876,7 @@
                      if (!confirm("คุณไม่ได้กรอกที่อยู่ จะถือเป็น 'รับเองที่ร้าน' ใช่หรือไม่?")) { return; }
                 }
 
-                db.collection("orders").add({ // ใช้ "orders" ตัวเล็ก
+                db.collection("orders").add({ 
                     items: currentOrder,
                     total: orderTotal,
                     address: address || 'รับเองที่ร้าน',
@@ -980,6 +986,7 @@
         }
 
         function updateSalesDashboard() {
+            // This function runs only if the owner is logged in and the dashboard is visible
             let salesToday = 0;
             let salesWeek = 0;
             let salesMonth = 0;
@@ -1000,6 +1007,12 @@
         }
 
         function showMenuReport() {
+            // Ensure only logged-in owners can see the report
+            if (!isOwnerLoggedIn) {
+                alert("กรุณาเข้าสู่ระบบด้วยสิทธิ์เจ้าของร้านเพื่อดูรายงาน");
+                return;
+            }
+            
             const menuSales = {};
             
             menuSalesLog.forEach(log => {
