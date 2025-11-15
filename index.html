@@ -459,55 +459,72 @@
             qrPaymentModal.classList.remove('hidden');
         }
         
-        /**
-         * Generates the Line message and opens the chat window.
-         * * **UPDATED: ใช้ LINE_LINK โดยตรง เพื่อให้เด้งเข้าแชท Line ID ของร้านค้าเลย**
-         * @param {boolean} openChat - If true, opens the chat window. If false, just returns the URL.
-         * @param {string} [manualContactInfo=null] - Optional contact info override for pre-submission check.
-         * @param {string} [manualAddress=null] - Optional address override for pre-submission check.
-         * @param {number} [manualTotal=null] - Optional total override for pre-submission check.
-         * @param {string} [manualNotes=null] - Optional notes override for pre-submission check.
-         * @returns {string} The Line URL for chat.
-         */
-        function sendLineMessage(openChat = false, manualContactInfo = null, manualAddress = null, manualTotal = null, manualNotes = null) {
-            // Use lastCommittedOrder if available, otherwise use current input values or manual overrides
-            const data = lastCommittedOrder || { 
-                id: 'PENDING',
-                items: currentOrder,
-                total: manualTotal !== null ? manualTotal : currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0),
-                contactInfo: manualContactInfo !== null ? manualContactInfo : contactInfoInput.value.trim(),
-                address: manualAddress !== null ? manualAddress : (deliveryAddressInput.value.trim() || 'รับเองที่ร้าน'),
-                notes: manualNotes !== null ? manualNotes : orderNotesInput.value.trim()
-            };
-            
-            const itemsSummary = data.items.map(item => 
-                `${item.name} (${item.size}, หวาน ${item.sweetness}) x${item.quantity}`
-            ).join(', ');
-            
-            const message = 
-                `✅ *ออเดอร์ใหม่จากเว็บ* #${data.id.substring(0, 8)}:\n` +
-                `รายการ: ${itemsSummary}\n` +
-                `รวม: ฿${data.total.toLocaleString('th-TH')}\n` +
-                `ติดต่อ: ${data.contactInfo}\n` +
-                `ที่อยู่: ${data.address}\n` +
-                (data.notes && data.notes.trim() !== '' ? `หมายเหตุ: ${data.notes}\n` : '') +
-                `-- (ลูกค้าสั่งผ่านเว็บสำเร็จแล้ว)`;
+       // ประมาณบรรทัดที่ 186: แทนที่ฟังก์ชัน sendLineMessage() ทั้งหมด
+/**
+ * Generates the Line message and opens the chat window.
+ * * **UPDATED: ใช้ Line Scheme (line://) และคัดลอกข้อความไปที่ Clipboard ทันที**
+ * @param {boolean} openChat - If true, opens the chat window. If false, just returns the URL.
+ * @param {string} [manualContactInfo=null] - Optional contact info override for pre-submission check.
+ * @param {string} [manualAddress=null] - Optional address override for pre-submission check.
+ * @param {number} [manualTotal=null] - Optional total override for pre-submission check.
+ * @param {string} [manualNotes=null] - Optional notes override for pre-submission check.
+ * @returns {string} The Line URL for chat.
+ */
+function sendLineMessage(openChat = false, manualContactInfo = null, manualAddress = null, manualTotal = null, manualNotes = null) {
+    // ใช้ lastCommittedOrder ถ้ามี
+    const data = lastCommittedOrder || { 
+        id: 'PENDING',
+        items: currentOrder,
+        total: manualTotal !== null ? manualTotal : currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0),
+        contactInfo: manualContactInfo !== null ? manualContactInfo : contactInfoInput.value.trim(),
+        address: manualAddress !== null ? manualAddress : (deliveryAddressInput.value.trim() || 'รับเองที่ร้าน'),
+        notes: manualNotes !== null ? manualNotes : orderNotesInput.value.trim()
+    };
+    
+    const itemsSummary = data.items.map(item => 
+        `${item.name} (${item.size}, หวาน ${item.sweetness}) x${item.quantity}`
+    ).join(', ');
+    
+    const message = 
+        `✅ *ออเดอร์ใหม่จากเว็บ* #${data.id.substring(0, 8)}:\n` +
+        `รายการ: ${itemsSummary}\n` +
+        `รวม: ฿${data.total.toLocaleString('th-TH')}\n` +
+        `ติดต่อ: ${data.contactInfo}\n` +
+        `ที่อยู่: ${data.address}\n` +
+        (data.notes && data.notes.trim() !== '' ? `หมายเหตุ: ${data.notes}\n` : '') +
+        `-- (ลูกค้าสั่งผ่านเว็บสำเร็จแล้ว)`;
 
-            const encodedMessage = encodeURIComponent(message);
-            
-            // ** URL ที่ใช้สำหรับทั้ง Owner (บันทึกใน Firestore) และ Customer (เปิดแชท) **
-            // ใช้ LINE_LINK ที่เป็น HTTPS Link โดยตรง เพื่อให้ Line App เปิดขึ้นมาทันที
-            const finalLineUrl = `${LINE_LINK}?text=${encodedMessage}`;
-            
-            if (openChat) {
-                // ถ้าเป็นปุ่มที่ลูกค้าคลิก (ใน QR Modal) ให้เปิด URL นี้เลย
-                window.open(finalLineUrl, '_blank');
-                // ลบ alert() เพื่อให้การเปลี่ยนหน้าไปที่ Line App เป็นไปอย่างราบรื่นที่สุด
-                // alert("โปรดกด 'ส่ง' ใน Line Chat เพื่อยืนยันการสั่งซื้อกับร้านค้า"); 
-            }
-            
-            // คืนค่า URL ที่ใช้บันทึกใน Firestore
-            return finalLineUrl;
+    const encodedMessage = encodeURIComponent(message);
+    
+    // ** URL สำหรับเจ้าของร้านคลิกใน Firestore (ยังต้องมีข้อความฝังอยู่)**
+    const firestoreLineUrl = `${LINE_LINK}?text=${encodedMessage}`;
+    
+    // ** URL สำหรับปุ่มลูกค้า: เน้นเปิดแอป Line ID โดยตรง (Line Scheme)**
+    // (ใช้รูปแบบที่มั่นใจว่า Line App จะเปิดได้ แม้ว่าข้อความจะยาว)
+    const customerLineAppUrl = `line://ti/p/${LINE_LINK.split('/').pop()}`; // line://ti/p/nan570402
+    
+    // ** Line ID ที่ถูกต้อง: nan570402 (ใช้สำหรับกรณีที่ Line App ไม่เปิด) **
+    
+    if (openChat) {
+        // 1. คัดลอกข้อความไปที่ Clipboard ทันที
+        navigator.clipboard.writeText(message)
+            .then(() => {
+                // 2. แจ้งเตือนลูกค้าว่าคัดลอกแล้ว และจะเปิดแอป Line
+                alert(`✅ คัดลอกข้อความสรุปบิลเรียบร้อยแล้ว!\n\nโปรดกด OK แล้วไป "วาง" ข้อความในแชท Line ที่จะเปิดขึ้นมา.`);
+                
+                // 3. เปิด Line App (ใช้ Line Scheme ที่มีโอกาสทำงานสูง)
+                window.open(customerLineAppUrl, '_blank');
+            })
+            .catch(err => {
+                // 4. ถ้าคัดลอกล้มเหลว
+                alert(`⚠️ เกิดข้อผิดพลาดในการคัดลอกข้อความ โปรดคัดลอกข้อความด้านล่างนี้ด้วยตนเอง:\n\n${message}`);
+                window.open(customerLineAppUrl, '_blank');
+            });
+    }
+    
+    // คืนค่า URL ที่ใช้บันทึกใน Firestore
+    return firestoreLineUrl;
+}
         }
 
         // --- Date Helper Functions (คงเดิม) ---
@@ -1204,3 +1221,4 @@
     </script>
 </body>
 </html>
+
