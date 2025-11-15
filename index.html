@@ -1091,8 +1091,8 @@
                             contactLink = `https://line.me/ti/p/${contact.replace(/@/g, '')}`; 
                         }
 
-                        // เปลี่ยนจาก <a> Tag เป็น <button> และเรียกใช้ copyAndOpenLine
-                        lineContactButton = `<button onclick="copyAndOpenLine('${order.id}', '${contactLink}', '${buttonText}')" 
+                        // แก้ไข: ใช้ .replace(/'/g, "\\'") เพื่อจัดการ Single Quotes ภายใน String
+                        lineContactButton = `<button onclick="copyAndOpenLine('${order.id}', '${contactLink.replace(/'/g, "\\'")}', '${buttonText.replace(/'/g, "\\'")}')" 
                                                 class="text-xs ${buttonColor} text-white font-bold py-1 px-3 rounded-lg flex items-center space-x-1">
                                                 ${iconSvg}
                                                 <span>${buttonText}</span>
