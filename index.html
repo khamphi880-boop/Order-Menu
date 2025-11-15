@@ -1022,7 +1022,7 @@
             });
         });
 
-        // 🔥 UPDATED: renderOrderQueue (เปลี่ยนปุ่ม Line Chat ให้คัดลอก ID + เปิดแชทลูกค้า/โทรออก) 🔥
+        // 🔥 UPDATED: renderOrderQueue (ใช้ Line Scheme ธรรมดาที่สุดในการเปิดแอป Line) 🔥
         function renderOrderQueue() {
             const displayQueue = orderQueue.filter(order => order.status !== 'เสร็จแล้ว' && order.status !== 'ยกเลิก');
 
@@ -1064,23 +1064,21 @@
                 let sourceTagDisplay = '';
                 let lineContactButton = ''; // NEW Button variable
 
-               // ... (ในส่วนของ renderOrderQueue)
-
                 if (isOwnerLoggedIn) {
+                    // OWNER VIEW: Show full header and action buttons
                     orderHeader = `คิวที่ #${queueNumber} | ออเดอร์ #${order.id.substring(0, 8)}...`;
                     
                     // ==========================================================
-                    // NEW LOGIC: ปุ่มติดต่อลูกค้า (เน้น Line OA ร้านค้า หรือ โทรออก)
+                    // NEW LOGIC: ปุ่ม Line Chat ที่เน้นการคัดลอกและเปิดแอป Line ธรรมดา
                     // ==========================================================
                     let contactLink = null;
                     let buttonText = 'แชท Line';
                     let buttonColor = 'bg-green-500 hover:bg-green-600';
                     let iconSvg = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>`;
-                    
+
+                    // 1. ตรวจสอบเบอร์โทรศัพท์ (ถ้ามี ให้ใช้ Tel: Link เพื่อแยกฟังก์ชัน)
                     if (order.contactInfo && order.contactInfo !== 'รับเอง_ไม่มีช่องทางติดต่อ') {
                         const contact = order.contactInfo.trim().replace(/-/g, '');
-
-                        // 1. ตรวจสอบว่าเป็นเบอร์โทรศัพท์ (ใช้ tel: scheme)
                         if (contact.match(/^0\d{9}$/) || contact.match(/^\d{9,10}$/)) { 
                             contactLink = `tel:${contact}`;
                             buttonText = '📞 โทรออก';
@@ -1089,28 +1087,20 @@
                         }
                     } 
                     
-                    // หากไม่ใช่เบอร์โทรศัพท์ (หรือไม่มีข้อมูลติดต่อ) ให้ใช้ Line OA ของร้านเสมอ
-                    if (!contactLink || contactLink.startsWith('line://')) { // ถ้ายังเป็น line:// อยู่ (ซึ่งมีปัญหา) หรือไม่มีลิงก์
-                        // ใช้ Line OA ของร้าน (LINE_LINK คือ Line OA HTTPS Link)
-                        const encodedMsg = encodeURIComponent(`ออเดอร์ #${order.id.substring(0, 8)}: [กรุณาค้นหาลูกค้าจากข้อมูลติดต่อ: ${order.contactInfo}]`);
-                        contactLink = `${LINE_LINK}?text=${encodedMsg}`; // เปลี่ยนเป็น HTTPS Link ของ Line OA
-                        buttonText = 'แชท Line (ร้าน)';
-                        buttonColor = 'bg-indigo-500 hover:bg-indigo-600'; 
-                        iconSvg = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>`;
+                    // 2. ถ้าไม่ใช่ปุ่มโทรออก ให้ใช้คำสั่งเปิดแอป Line พื้นฐาน
+                    if (!contactLink) {
+                        // **ใช้ Line Scheme พื้นฐานที่สุด: line://**
+                        contactLink = `line://`; 
+                        buttonText = 'แชท Line';
                     }
 
                     // สร้างปุ่มที่คัดลอก ID แล้วเปิด Link (ใช้ copyAndOpenLine)
-                    // หมายเหตุ: ถึงแม้จะเป็น HTTPS Link แต่เมื่อกดบนมือถือ มันจะพยายามเปิดแอป Line อยู่ดี (Universal Link)
+                    // หมายเหตุ: ปุ่มนี้จะคัดลอกเลขออเดอร์ แล้วสั่งเปิดแอป Line ขึ้นมาเท่านั้น
                     lineContactButton = `<button onclick="copyAndOpenLine('${order.id}', '${contactLink.replace(/'/g, "\\'")}', '${buttonText.replace(/'/g, "\\'")}')" 
                                             class="text-xs ${buttonColor} text-white font-bold py-1 px-3 rounded-lg flex items-center space-x-1">
                                             ${iconSvg}
                                             <span>${buttonText}</span>
                                         </button>`;
-                    
-                    // ... (ส่วน Action Buttons และ sourceTagDisplay เหมือนเดิม) ...
-                } 
-// ... (ส่วนที่เหลือของ renderOrderQueue) ...
-                    // ==========================================================
                     
                     // Action Buttons (Accept, Done, Cancel)
                     if (order.status === 'คิว') {
@@ -1266,4 +1256,3 @@
     </script>
 </body>
 </html>
-
