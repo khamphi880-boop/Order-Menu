@@ -277,6 +277,7 @@
         </div>
     </div>
 
+    <audio id="notification-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-small-bell-notification-860.mp3" preload="auto"></audio>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script> 
@@ -414,7 +415,6 @@
         const orderQueueEl = document.getElementById('order-queue');
         
         // --- UPDATED INPUTS ---
-        // const contactInfoInput = document.getElementById('contact-info'); // ลบออก
         const deliveryAddressInput = document.getElementById('delivery-address'); 
         const orderNotesInput = document.getElementById('order-notes'); 
         // ----------------------
@@ -435,6 +435,10 @@
         let lastCommittedOrder = null;
         let isOwnerLoggedIn = false; 
         let orderSourceTag = ''; 
+        
+        // NEW GLOBAL VARIABLES FOR NOTIFICATION
+        const notificationSound = document.getElementById('notification-sound'); 
+        let lastQueueLength = 0; 
 
 
         // Helper function to find item data from all menus (คงเดิม)
@@ -455,6 +459,7 @@
         
         /**
          * Generates the Line message and opens the chat window.
+         * * แก้ไขข้อความ Line ตามที่คุณต้องการ
          */
         function sendLineMessage(openChat = false, manualContactInfo = null, manualAddress = null, manualTotal = null, manualNotes = null) {
             // NOTE: contactInfo ถูก hardcode เป็น 'ไม่ระบุช่องทางติดต่อ' ใน submit handler
@@ -473,14 +478,15 @@
                 `${item.name} (${item.size}, หวาน ${item.sweetness}) x${item.quantity}`
             ).join(', ');
             
+            // 🔥 EDITED TEXT HERE 🔥
             const message = 
-                `✅ *ออเดอร์ใหม่จากเว็บ* #${data.id.substring(0, 8)}:\n` +
+                `🐄 *วัวนม* #${data.id.substring(0, 8)}:\n` +
                 `รายการ: ${itemsSummary}\n` +
                 `รวม: ฿${data.total.toLocaleString('th-TH')}\n` +
                 `ติดต่อ: ${data.contactInfo}\n` +
                 `ที่อยู่: ${data.address}\n` +
                 (data.notes && data.notes.trim() !== '' ? `หมายเหตุ: ${data.notes}\n` : '') +
-                `-- (ลูกค้าสั่งผ่านเว็บสำเร็จแล้ว)`;
+                `--- สำเร็จ`; // 🔥 EDITED TEXT HERE 🔥
 
             const encodedMessage = encodeURIComponent(message);
             
@@ -546,7 +552,7 @@
             return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
         }
 
-        // 🔥 Firebase Realtime Listeners (ใช้ Query 2 ชั้น) 🔥 (คงเดิม)
+        // 🔥 UPDATED: Firebase Realtime Listeners (เพิ่ม Logic เสียงเตือน) 🔥
         function initFirebaseListeners() {
             db.collection("orders") 
                 .orderBy("status", "asc") 
@@ -556,6 +562,20 @@
                         id: doc.id, 
                         ...doc.data() 
                     }));
+                    
+                    // NEW LOGIC: ตรวจสอบและเล่นเสียงเตือนเมื่อมีออเดอร์สถานะ 'คิว' เพิ่มขึ้น
+                    const currentQueueLength = orderQueue.filter(order => order.status === 'คิว').length;
+
+                    // ตรวจสอบว่ามีการโหลดครั้งแรกหรือไม่ (lastQueueLength > 0)
+                    // และจำนวนคิวใหม่มากกว่าคิวล่าสุด
+                    if (lastQueueLength > 0 && currentQueueLength > lastQueueLength) {
+                        if (isOwnerLoggedIn && notificationSound) {
+                            notificationSound.play().catch(e => console.log('Autoplay blocked:', e));
+                        }
+                    }
+                    
+                    lastQueueLength = currentQueueLength; // อัปเดตจำนวนคิวล่าสุด
+                    
                     renderOrderQueue();
                 }, error => {
                     console.error("Firebase Order Listener Error:", error);
@@ -951,7 +971,6 @@
             }
             
             // 2. กำหนด contactInfo เป็นค่าเริ่มต้นเนื่องจากลบช่องกรอกออกแล้ว
-            // ทุกออเดอร์จะถือเป็น 'รับเอง' และ 'ไม่มีช่องทางติดต่อ' (หรือระบุที่อยู่จัดส่งเท่านั้น)
             const contactInfo = 'ไม่ระบุช่องทางติดต่อ'; 
             
             // 3. Generate the Line Chat URL (for owner tracking)
@@ -984,7 +1003,6 @@
                 
                 // Clear inputs
                 currentOrder = []; 
-                // contactInfoInput.value = ''; // ไม่มีแล้ว
                 deliveryAddressInput.value = '';
                 orderNotesInput.value = ''; 
                 
@@ -1030,6 +1048,7 @@
                 
                 // แสดงข้อมูลติดต่อ: ตอนนี้จะมีค่าเป็น 'ไม่ระบุช่องทางติดต่อ' เสมอ
                 let contactDisplay = '';
+                // Note: ยังคงตรวจสอบว่าไม่ใช่ 'ไม่ระบุช่องทางติดต่อ' เพื่อรองรับออเดอร์เก่าที่มีข้อมูลเบอร์โทรอยู่
                 if (order.contactInfo && order.contactInfo !== 'ไม่ระบุช่องทางติดต่อ') {
                      contactDisplay = `<p class="text-xs text-gray-800 font-semibold mt-1">📱 ติดต่อ: ${order.contactInfo}</p>`;
                 } else {
@@ -1051,8 +1070,7 @@
                     let buttonColor = 'bg-green-500 hover:bg-green-600';
                     let iconSvg = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>`;
 
-                    // 1. ตรวจสอบเบอร์โทรศัพท์ (ถ้ามี ให้ใช้ Tel: Link เพื่อแยกฟังก์ชัน)
-                    // NOTE: ตอนนี้ contactInfo จะมีค่าเป็น 'ไม่ระบุ...' เสมอ ยกเว้นถ้าโค้ดเดิมของคุณมีบางออเดอร์ที่ยังมีเบอร์โทรอยู่
+                    // 1. ตรวจสอบเบอร์โทรศัพท์ (สำหรับออเดอร์เก่าที่มีเบอร์โทรอยู่)
                     if (order.contactInfo && order.contactInfo !== 'ไม่ระบุช่องทางติดต่อ') {
                         const contact = order.contactInfo.trim().replace(/-/g, '');
                         if (contact.match(/^0\d{9}$/) || contact.match(/^\d{9,10}$/)) { 
