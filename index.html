@@ -1390,62 +1390,90 @@
             updateQueueTracker(); 
         }
         
-        // 🔥 UPDATED: Submit Order (ส่งข้อมูล addBubble ไปด้วย) 🔥
-        modalSubmitOrderBtn.addEventListener('click', () => {
-            const orderTotal = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
-            const address = modalDeliveryAddressInput.value.trim(); 
-            const notes = modalOrderNotesInput.value.trim(); 
-            
-            if (currentOrder.length === 0) {
-                 alert("กรุณาเลือกเมนูอย่างน้อย 1 รายการก่อนส่งออเดอร์");
-                 return; 
-            }
-            
-            const contactInfo = 'ไม่ระบุช่องทางติดต่อ'; 
-            const contactLineURL = sendLineMessage(false, contactInfo, address || 'รับเองที่ร้าน', orderTotal, notes); 
-            
-            db.collection("orders").add({ 
-                items: currentOrder.map(item => ({
-                    ...item,
-                    // ตัด id ชั่วคราวออก และรวม addBubble
-                    id: undefined, 
-                    addBubble: item.addBubble || false 
-                })),
-                total: orderTotal,
-                contactInfo: contactInfo, 
-                contactLineURL: contactLineURL,
-                address: address || 'รับเองที่ร้าน',
-                notes: notes, 
-                status: 'คิว',
-                placedAt: firebase.firestore.FieldValue.serverTimestamp(), 
-                sourceTag: orderSourceTag 
-            })
-            .then(docRef => {
-                lastCommittedOrder = {
-                     id: docRef.id, 
-                     items: [...currentOrder],
-                     total: orderTotal,
-                     contactInfo: contactInfo, 
-                     address: address || 'รับเองที่ร้าน',
-                     notes: notes, 
-                     sourceTag: orderSourceTag,
-                     contactLineURL: contactLineURL 
-                };
-                
-                // Clear state
-                currentOrder = []; 
-                modalDeliveryAddressInput.value = '';
-                modalOrderNotesInput.value = ''; 
-                
-                closeOrderEntryModal(); 
-                updateQueueTracker(); 
-                showPaymentQRModal(orderTotal);
-            })
-            .catch(error => {
-                console.error("Error adding document: ", error);
-                alert("ไม่สามารถส่งออเดอร์ได้ กรุณาลองใหม่");
-            });
-        });
+      // ... โค้ด Firebase Configuration และ Global Variables เดิม ...
+
+// 🔥 UPDATED: Submit Order (ส่งข้อมูล addBubble ไปด้วย พร้อมจัดการ Error) 🔥
+modalSubmitOrderBtn.addEventListener('click', () => {
+    const orderTotal = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const address = modalDeliveryAddressInput.value.trim(); 
+    const notes = modalOrderNotesInput.value.trim(); 
+    
+    if (currentOrder.length === 0) {
+        alert("กรุณาเลือกเมนูอย่างน้อย 1 รายการก่อนส่งออเดอร์");
+        return; 
+    }
+    
+    // NOTE: กำหนดช่องทางการติดต่อเป็น 'ไม่ระบุช่องทางติดต่อ' เสมอ ตามโค้ดเดิม
+    const contactInfo = 'ไม่ระบุช่องทางติดต่อ'; 
+    const contactLineURL = sendLineMessage(false, contactInfo, address || 'รับเองที่ร้าน', orderTotal, notes); 
+    
+    // ปิดปุ่มชั่วคราวขณะส่งข้อมูล
+    modalSubmitOrderBtn.disabled = true;
+
+    db.collection("orders").add({ 
+        items: currentOrder.map(item => ({
+            ...item,
+            id: undefined, 
+            addBubble: item.addBubble || false 
+        })),
+        total: orderTotal,
+        contactInfo: contactInfo, 
+        contactLineURL: contactLineURL,
+        address: address || 'รับเองที่ร้าน',
+        notes: notes, 
+        status: 'คิว',
+        placedAt: firebase.firestore.FieldValue.serverTimestamp(), 
+        sourceTag: orderSourceTag 
+    })
+    .then(docRef => {
+        // --- PATH: สำเร็จ ---
+        lastCommittedOrder = {
+            id: docRef.id, 
+            items: [...currentOrder],
+            total: orderTotal,
+            contactInfo: contactInfo, 
+            address: address || 'รับเองที่ร้าน',
+            notes: notes, 
+            sourceTag: orderSourceTag,
+            contactLineURL: contactLineURL 
+        };
+        
+        // Clear state
+        currentOrder = []; 
+        modalDeliveryAddressInput.value = '';
+        modalOrderNotesInput.value = ''; 
+        
+        closeOrderEntryModal(); 
+        updateQueueTracker(); 
+        modalSubmitOrderBtn.disabled = false; // เปิดปุ่ม
+        
+        // 🚀 แสดง QR Payment Modal (หากแสดงโมดัลนี้ได้แสดงว่าสำเร็จ)
+        showPaymentQRModal(orderTotal);
+        
+        console.log("✅ Order submitted successfully with ID: ", docRef.id);
+        // เพิ่ม Alert ยืนยัน (สามารถลบได้หากไม่ต้องการ)
+        alert(`✅ ส่งออเดอร์สำเร็จ! (ID: ${docRef.id.substring(0, 8)})\nกรุณาสแกน QR Code เพื่อชำระเงิน`);
+
+    })
+    .catch(error => {
+        // --- PATH: ล้มเหลว ---
+        console.error("Error adding document: ", error);
+        modalSubmitOrderBtn.disabled = false; // เปิดปุ่ม
+        
+        let errorMessage = `ไม่สามารถส่งออเดอร์ได้ กรุณาลองใหม่`;
+        
+        // 🚨 ตรวจสอบข้อผิดพลาดด้านสิทธิ์การเข้าถึง (Common Firestore Error)
+        if (error.code === 'permission-denied') {
+             errorMessage = `❌ ERROR: สิทธิ์การเข้าถึงถูกปฏิเสธ (Permission Denied)\n\nสาเหตุที่เป็นไปได้:\n1. Firebase Security Rules ไม่อนุญาตให้เขียนข้อมูล\n2. คุณอาจต้องล็อกอินก่อน (สำหรับเจ้าของร้าน)`;
+        } else {
+             errorMessage += `\n(Error: ${error.message})`;
+        }
+
+        alert(errorMessage);
+    });
+});
+
+// ... โค้ด JavaScript ที่เหลือทั้งหมด (ไม่เปลี่ยนแปลง) ...
 
         // --- Queue and Sales Logic (Retained) ---
         function renderOrderQueue() {
@@ -1705,5 +1733,6 @@
     </script>
 </body>
 </html>
+
 
 
