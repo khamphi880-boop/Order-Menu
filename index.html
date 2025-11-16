@@ -639,8 +639,8 @@
                 let bubbleDropdown = '';
                 if (item.hasBubble) {
                     const bubbleOptionsHtml = `
-                        <option value="true" ${item.addBubble ? 'selected' : ''}>รับไข่มุก (ฟรี)</option>
-                        <option value="false" ${!item.addBubble ? 'selected' : ''}>ไม่รับไข่มุก</option>
+                        <option value="true" ${item.addBubble ? 'selected' : ''}>ใส่ไข่มุก</option>
+                        <option value="false" ${!item.addBubble ? 'selected' : ''}>ไม่ใส่ไข่มุก</option>
                     `;
                     bubbleDropdown = `
                         <div class="flex flex-col">
@@ -1137,3 +1137,4 @@
     renderMenu();
     initFirebaseListeners();
 </script>
+
