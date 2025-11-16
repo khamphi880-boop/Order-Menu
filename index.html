@@ -35,7 +35,7 @@
             max-height: 100vh;
             display: flex;
             flex-direction: column;
-            gap: 1rem; /* Reduced spacing */
+            gap: 1rem; 
         }
         .main-content {
             flex-grow: 1;
@@ -83,9 +83,9 @@
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
         
-        /* Dashboard/Queue Button Style (New) */
-        .dashboard-toggle-btn {
-            background-color: #10b981; /* bg-emerald-500 */
+        /* Dashboard/Queue Button Style */
+        .dashboard-toggle-btn, .cart-toggle-btn {
+            background-color: #10b981; /* Default Color */
             color: white;
             padding: 0.75rem 1rem;
             border-radius: 0.5rem;
@@ -98,7 +98,7 @@
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
             margin-bottom: 0.5rem;
         }
-        .queue-badge {
+        .queue-badge, .cart-badge {
             position: absolute;
             top: -10px;
             right: -10px;
@@ -150,13 +150,7 @@
             flex-grow: 1; 
             overflow-y: auto;
             padding-right: 0.5rem;
-            max-height: 40vh; 
-        }
-        #order-entry-panel {
-            flex-shrink: 0;
-        }
-        #current-order-items {
-            max-height: 120px; 
+            /* ปรับให้ใช้พื้นที่ยืดหยุ่นมากขึ้นเมื่อ order panel ถูกซ่อน */
         }
 
         /* Main Content Control */
@@ -177,40 +171,18 @@
                 <h2 class="text-xl font-bold text-teal-600">เมนูสั่งซื้อ</h2>
             </header>
             
+            <div id="cart-toggle-btn" class="cart-toggle-btn bg-yellow-500 hover:bg-yellow-600 shadow-xl" onclick="openOrderEntryModal()">
+                <span>🛒 รายการออเดอร์ (สั่งซื้อ)</span>
+                <span id="cart-item-count" class="cart-badge hidden">0</span>
+            </div>
+
             <div id="dashboard-toggle-btn" class="dashboard-toggle-btn bg-emerald-500 hover:bg-emerald-600 shadow-xl opacity-75" onclick="showMainContent('queue')">
                 <span>🥤 ระบบคิวและสถานะออเดอร์</span>
-                <span id="queue-overall-count" class="queue-badge">0</span>
+                <span id="queue-overall-count" class="queue-badge hidden">0</span>
             </div>
 
             <div id="category-list" class="space-y-3">
                 <p class="text-gray-400 text-center">กำลังโหลดหมวดหมู่...</p>
-            </div>
-            
-            <div id="order-entry-panel" class="bg-gray-50 p-4 rounded-xl shadow-inner mt-4">
-                <h3 class="text-lg font-semibold mb-3 border-b pb-1">🛒 รายการออเดอร์ปัจจุบัน</h3>
-                <div id="current-order-items" class="space-y-3 overflow-y-auto no-scrollbar pr-2 mb-4 min-h-[100px]"> 
-                    <p class="text-gray-400 text-center mt-2 text-sm">เลือกเมนูจากด้านบนเพื่อเริ่ม...</p>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="delivery-address" class="block text-xs font-medium text-gray-700 mb-1">ที่อยู่จัดส่ง</label>
-                    <textarea id="delivery-address" rows="2" class="w-full p-1 text-sm border border-gray-300 rounded focus:ring-teal-500"></textarea>
-                </div>
-                
-                <div class="mb-4">
-                    <label for="order-notes" class="block text-xs font-medium text-gray-700 mb-1">หมายเหตุเพิ่มเติม</label>
-                    <textarea id="order-notes" rows="1" class="w-full p-1 text-sm border border-gray-300 rounded focus:ring-teal-500"></textarea>
-                </div>
-                
-                <div class="border-t pt-3">
-                    <div class="flex justify-between items-center text-xl font-bold mb-3">
-                        <span>รวม:</span>
-                        <span id="total-price" class="text-teal-600">฿0</span>
-                    </div>
-                    <button id="submit-order-btn" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 rounded-lg transition disabled:bg-gray-400">
-                        ส่งออเดอร์
-                    </button>
-                </div>
             </div>
         </div>
 
@@ -274,6 +246,41 @@
         </div>
     </div>
     
+    <div id="order-entry-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 shadow-xl w-11/12 max-w-lg">
+             <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-2xl font-bold text-yellow-700">🛒 รายการออเดอร์ปัจจุบัน</h3>
+                <button onclick="closeOrderEntryModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <div id="modal-current-order-items" class="h-[250px] space-y-3 overflow-y-auto no-scrollbar pr-2 mb-4 min-h-[100px]"> 
+                <p class="text-gray-400 text-center mt-2 text-sm">ไม่มีรายการในตะกร้า</p>
+            </div>
+            
+            <div class="mb-3">
+                <label for="modal-delivery-address" class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่จัดส่ง</label>
+                <textarea id="modal-delivery-address" rows="2" class="w-full p-2 text-sm border border-gray-300 rounded focus:ring-teal-500"></textarea>
+            </div>
+            
+            <div class="mb-4">
+                <label for="modal-order-notes" class="block text-sm font-medium text-gray-700 mb-1">หมายเหตุเพิ่มเติม</label>
+                <textarea id="modal-order-notes" rows="1" class="w-full p-2 text-sm border border-gray-300 rounded focus:ring-teal-500"></textarea>
+            </div>
+            
+            <div class="border-t pt-3">
+                <div class="flex justify-between items-center text-2xl font-bold mb-3">
+                    <span>รวม:</span>
+                    <span id="modal-total-price" class="text-teal-600">฿0</span>
+                </div>
+                <button id="modal-submit-order-btn" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 rounded-lg transition disabled:bg-gray-400">
+                    ส่งออเดอร์
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
         <div class="bg-white rounded-lg p-8 shadow-xl text-center">
             <svg class="w-16 h-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -386,7 +393,7 @@
         // 3. Initialize App และ Firestore
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const auth = firebase.auth(); // NEW: Auth service
+        const auth = firebase.auth(); 
         
         // ====================================================================
         // 📝 START: โค้ด JavaScript ระบบจัดการออเดอร์ (ปรับเป็น Firebase) 📝
@@ -497,37 +504,31 @@
         let menuSalesLog = []; 
         let currentMenuDoc = null; 
 
-        // Get Elements
+        // Get Elements (Sidebar)
+        const cartItemCountEl = document.getElementById('cart-item-count'); // NEW: Cart Badge
+        const queueOverallCountEl = document.getElementById('queue-overall-count'); 
         const categoryListEl = document.getElementById('category-list');
+
+        // Get Elements (Main Content Sections)
         const menuGrid = document.getElementById('menu-grid');
         const mainMenuHeaderEl = document.getElementById('main-menu-header');
-        
-        const currentOrderItemsEl = document.getElementById('current-order-items');
-        const totalPriceEl = document.getElementById('total-price');
-        const submitOrderBtn = document.getElementById('submit-order-btn');
-        const orderQueueEl = document.getElementById('order-queue');
-        const queueOverallCountEl = document.getElementById('queue-overall-count'); // NEW: Overall Queue Count Badge
-        
-        // --- UPDATED INPUTS ---
-        const deliveryAddressInput = document.getElementById('delivery-address'); 
-        const orderNotesInput = document.getElementById('order-notes'); 
-        // ----------------------
-
         const salesDashboardContainer = document.getElementById('queue-status-tracker');
+        const orderQueueEl = document.getElementById('order-queue');
         const salesTodayEl = document.getElementById('sales-today');
         const queueCountQueueEl = document.getElementById('queue-count-queue');
         const queueCountDoingEl = document.getElementById('queue-count-doing');
-        
-        const menuReportModal = document.getElementById('menu-report-modal');
-        const menuReportContent = document.getElementById('menu-report-content');
-        const qrPaymentModal = document.getElementById('qr-payment-modal');
-        const qrTotalAmountEl = document.getElementById('qr-total-amount');
-        
-        // Dynamic Main Content Sections
-        const menuSection = document.getElementById('menu-section'); // Section 2A
-        const queueSection = document.getElementById('queue-section'); // Section 2B
-        const mainTitleEl = document.getElementById('main-title'); // Main title in content header
+        const menuSection = document.getElementById('menu-section'); 
+        const queueSection = document.getElementById('queue-section'); 
+        const mainTitleEl = document.getElementById('main-title'); 
 
+        // Get Elements (Modal)
+        const orderEntryModal = document.getElementById('order-entry-modal'); // NEW Modal Element
+        const modalCurrentOrderItemsEl = document.getElementById('modal-current-order-items'); // NEW: Modal Item List
+        const modalTotalPriceEl = document.getElementById('modal-total-price'); // NEW: Modal Total Price
+        const modalSubmitOrderBtn = document.getElementById('modal-submit-order-btn'); // NEW: Modal Submit Button
+        const modalDeliveryAddressInput = document.getElementById('modal-delivery-address'); // NEW: Modal Address Input
+        const modalOrderNotesInput = document.getElementById('modal-order-notes'); // NEW: Modal Notes Input
+        
         const LINE_LINK = 'https://line.me/ti/p/Fr9VYI-T7F'; 
 
         let lastCommittedOrder = null;
@@ -539,12 +540,11 @@
         let activeCategoryContainerId = null; 
 
 
-        // Helper function to find item data from all menus (คงเดิม)
+        // Helper function to find item data from all menus
         function getItemDataById(itemId) {
             return allMenuData.find(i => i.id === itemId);
         }
 
-        // NEW FUNCTION: Extract parameter from URL (คงเดิม)
         function getURLParameter(name) {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get(name) || ''; 
@@ -552,12 +552,24 @@
         
         function showPaymentQRModal(orderTotal) {
             qrTotalAmountEl.textContent = `฿${orderTotal.toLocaleString('th-TH')}`;
-            qrPaymentModal.classList.remove('hidden');
+            document.getElementById('qr-payment-modal').classList.remove('hidden');
         }
-        
-        /**
-         * Generates the Line message and opens the chat window (Used for CUSTOMER Button / Firestore Link)
-         */
+
+        // --- NEW: Order Entry Modal Functions ---
+        function openOrderEntryModal() {
+             // Sync data from local state to modal inputs/display
+            renderCurrentOrder(); 
+            // Since we removed the old inputs, we temporarily use the modal inputs for submission logic
+            // For persistence across modal open/close, you would typically save these to a local variable first.
+            // For now, we will simply open the modal.
+            orderEntryModal.classList.remove('hidden');
+        }
+
+        function closeOrderEntryModal() {
+            orderEntryModal.classList.add('hidden');
+        }
+
+        // --- Line Message and Contact Logic (Retained) ---
         function sendLineMessage(openChat = false, manualContactInfo = null, manualAddress = null, manualTotal = null, manualNotes = null) {
             const contactInfo = manualContactInfo !== null ? manualContactInfo : 'ไม่ระบุช่องทางติดต่อ'; 
 
@@ -566,8 +578,9 @@
                 items: currentOrder,
                 total: manualTotal !== null ? manualTotal : currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0),
                 contactInfo: contactInfo,
-                address: manualAddress !== null ? manualAddress : (deliveryAddressInput.value.trim() || 'รับเองที่ร้าน'),
-                notes: manualNotes !== null ? manualNotes : orderNotesInput.value.trim()
+                // Use modal inputs for the currently constructed order
+                address: manualAddress !== null ? manualAddress : (modalDeliveryAddressInput.value.trim() || 'รับเองที่ร้าน'), 
+                notes: manualNotes !== null ? manualNotes : modalOrderNotesInput.value.trim()
             };
             
             const itemsSummary = data.items.map(item => 
@@ -596,18 +609,13 @@
             return firestoreLineUrl;
         }
 
-        /**
-         * คัดลอกเลขออเดอร์ไปยังคลิปบอร์ดและเปิดแอป Line (line://) พร้อมหน่วงเวลา
-         */
         function copyAndOpenLine(orderId, contactLink, buttonText) {
             const shortOrderId = `#${orderId.substring(0, 8)}`; 
             
-            // 1. คัดลอกเลขออเดอร์ไปยังคลิปบอร์ด
             const copyPromise = navigator.clipboard && navigator.clipboard.writeText
                 ? navigator.clipboard.writeText(shortOrderId).then(() => {
                     console.log(`Copied Order ID: ${shortOrderId}`);
                     if (buttonText !== '📞 โทรออก') {
-                        // Alert เพื่อแจ้งว่าคัดลอกสำเร็จแล้ว
                         alert(`คัดลอกเลขออเดอร์ ${shortOrderId} แล้ว! (โปรดวางในช่องค้นหา Line)`);
                     }
                 }).catch(err => {
@@ -619,7 +627,6 @@
                     resolve();
                 });
 
-            // 2. เปิดลิงก์ติดต่อ Line/โทรออกหลังจากคัดลอกเสร็จ (พร้อมหน่วงเวลา 200ms)
             copyPromise.finally(() => {
                 setTimeout(() => {
                     window.open(contactLink, '_blank');
@@ -627,7 +634,7 @@
             });
         }
 
-        // --- Date Helper Functions (คงเดิม) ---
+        // --- Date Helper Functions (Retained) ---
         function isToday(date) {
             const today = new Date();
             return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
@@ -655,15 +662,15 @@
                     lastQueueLength = currentQueueLength;
                     
                     renderOrderQueue();
-                    updateQueueTracker(); // NEW: Update queue counts
+                    updateQueueTracker(); 
                 }, error => {
                     console.error("Firebase Order Listener Error:", error);
-                    orderQueueEl.innerHTML = '<p class="text-red-500 text-center mt-4 font-bold">⚠️ ERROR: ไม่สามารถเชื่อมต่อฐานข้อมูลได้</p>';
+                    document.getElementById('order-queue').innerHTML = '<p class="text-red-500 text-center mt-4 font-bold">⚠️ ERROR: ไม่สามารถเชื่อมต่อฐานข้อมูลได้</p>';
                 });
 
             db.collection("salesLog").onSnapshot(snapshot => {
                 menuSalesLog = snapshot.docs.map(doc => doc.data());
-                updateSalesDashboard(); // Also updates the Today Sales count in the tracker
+                updateSalesDashboard(); 
             }, error => {
                 console.error("Firebase Sales Listener Error:", error);
             });
@@ -672,20 +679,30 @@
         }
 
         /**
-         * NEW: Updates the queue count display in the tracker bar and the overall badge.
+         * UPDATED: Updates the queue count badge and cart badge.
          */
         function updateQueueTracker() {
             const queueCount = orderQueue.filter(order => order.status === 'คิว').length;
             const doingCount = orderQueue.filter(order => order.status === 'กำลังทำ').length;
-            const overallCount = queueCount + doingCount;
+            const overallQueueCount = queueCount + doingCount;
             
-            // Update the badge on the main menu button
-            queueOverallCountEl.textContent = overallCount;
-            if (overallCount > 0) {
+            // Update the Queue Badge
+            queueOverallCountEl.textContent = overallQueueCount;
+            if (overallQueueCount > 0) {
                 queueOverallCountEl.classList.remove('hidden');
             } else {
                  queueOverallCountEl.classList.add('hidden');
             }
+
+            // Update the Cart Badge based on currentOrder (Total Quantity)
+            const totalItemsInCart = currentOrder.reduce((sum, item) => sum + item.quantity, 0);
+            cartItemCountEl.textContent = totalItemsInCart;
+            if (totalItemsInCart > 0) {
+                 cartItemCountEl.classList.remove('hidden');
+            } else {
+                 cartItemCountEl.classList.add('hidden');
+            }
+
 
             // Update the detailed tracker bar (only visible in queue-section for owner)
             queueCountQueueEl.textContent = queueCount;
@@ -699,16 +716,15 @@
         }
         
         /**
-         * NEW: Toggles between Menu Section and Queue Section in Main Content.
-         * @param {string} section 'menu' or 'queue'
+         * Toggles between Menu Section and Queue Section in Main Content.
          */
         function showMainContent(section) {
             menuSection.classList.remove('active');
             queueSection.classList.remove('active');
             
             document.getElementById('dashboard-toggle-btn').classList.remove('opacity-75', 'shadow-xl'); 
+            document.getElementById('cart-toggle-btn').classList.remove('opacity-75', 'shadow-xl'); 
 
-            // De-select all category buttons
             document.querySelectorAll('#category-list .category-toggle-btn').forEach(btn => {
                 btn.classList.remove('opacity-75', 'shadow-xl'); 
             });
@@ -716,7 +732,6 @@
             if (section === 'menu') {
                 menuSection.classList.add('active');
                 mainTitleEl.textContent = 'รายการเมนู';
-                // Re-select the active category button
                  if (activeCategoryContainerId) {
                     const activeBtn = document.getElementById(activeCategoryContainerId);
                     if (activeBtn) activeBtn.classList.add('opacity-75', 'shadow-xl');
@@ -777,9 +792,6 @@
             return menuItem;
         }
 
-        /**
-         * Renders menu items into the Main Content area (#menu-grid)
-         */
         function renderCategoryMenu(categoryName, menuData, colorClass) {
             menuGrid.innerHTML = '';
             menuGrid.className = 'menu-container-grid'; 
@@ -800,14 +812,10 @@
         }
 
 
-        /**
-         * Shows menu items of the selected category in the Main Content.
-         */
         function toggleCategory(categoryData, categoryTitle, containerId) {
             // Switch to Menu View
             showMainContent('menu');
 
-            // Remove 'active' class from previous category button
             if (activeCategoryContainerId) {
                 const prevBtn = document.getElementById(activeCategoryContainerId);
                 if (prevBtn) {
@@ -815,7 +823,6 @@
                 }
             }
 
-            // Set 'active' class on current category button
             const currentBtn = document.getElementById(containerId);
             if (currentBtn) {
                 currentBtn.classList.add('opacity-75', 'shadow-xl'); 
@@ -823,17 +830,12 @@
 
             activeCategoryContainerId = containerId;
             
-            // Render menu items to the Main Content area
             mainMenuHeaderEl.textContent = `📋 รายการเมนู: ${categoryTitle}`;
             renderCategoryMenu(categoryTitle, categoryData, currentBtn.classList); 
             
-            // Ensure main content scrolls to the top of the menu grid
             menuGrid.parentElement.scrollTop = 0;
         }
 
-        /**
-         * Renders all category buttons in the Sidebar.
-         */
         function renderMenu() {
             categoryListEl.innerHTML = ''; 
             
@@ -849,7 +851,6 @@
                 const toggleBtn = document.createElement('div');
                 toggleBtn.id = category.id;
                 toggleBtn.className = `category-toggle-btn ${category.color}`;
-                // Using JSON.stringify and replace to handle quotes in attributes correctly
                 toggleBtn.setAttribute('onclick', `toggleCategory(${JSON.stringify(category.data).replace(/"/g, "'")}, '${category.title.replace(/'/g, "\\'")}', '${category.id}')`);
                 toggleBtn.innerHTML = `
                     <span>${category.title}</span>
@@ -857,7 +858,7 @@
                 categoryListEl.appendChild(toggleBtn);
             });
             
-            // Automatically select the Queue Dashboard on load
+             // Default view is the Queue Dashboard on load
              showMainContent('queue');
         }
         
@@ -897,9 +898,10 @@
             }
             
             renderCurrentOrder();
+            updateQueueTracker(); // Update cart badge
         }
         
-        // --- Owner Authentication Logic (คงเดิม) ---
+        // --- Owner Authentication Logic (Retained) ---
         
         function showOwnerLogin() {
             document.getElementById('owner-login-modal').classList.remove('hidden');
@@ -924,14 +926,12 @@
                 isOwnerLoggedIn = true;
                 document.getElementById('owner-login-btn').classList.add('hidden');
                 document.getElementById('owner-logout-btn').classList.remove('hidden');
-                
                 updateQueueTracker(); 
                 updateSalesDashboard();
             } else {
                 isOwnerLoggedIn = false;
                 document.getElementById('owner-login-btn').classList.remove('hidden');
                 document.getElementById('owner-logout-btn').classList.add('hidden');
-                
                 updateQueueTracker(); 
             }
         }
@@ -939,7 +939,6 @@
         function showImageUploadModal(itemId, itemName) {
             currentMenuDoc = itemId; 
             const item = getItemDataById(itemId);
-            
             document.getElementById('upload-menu-name').textContent = `สำหรับเมนู: **${itemName}** (ID: ${itemId})`;
             document.getElementById('menu-image-url').value = item.imageUrl || ''; 
             document.getElementById('image-upload-modal').classList.remove('hidden');
@@ -949,7 +948,6 @@
             if (!currentMenuDoc) return alert("Error: ไม่พบเมนูที่เลือก");
             
             const imageUrl = document.getElementById('menu-image-url').value.trim();
-            
             const itemIndex = allMenuData.findIndex(item => item.id === currentMenuDoc);
             if (itemIndex === -1) {
                 alert("Error: ไม่พบเมนูในข้อมูล");
@@ -977,11 +975,15 @@
             document.getElementById('image-upload-modal').classList.add('hidden');
         }
         
-        // --- Core Order Rendering Logic (ปรับปรุงเล็กน้อย) ---
+        // --- Core Order Rendering Logic (Updated for Modal) ---
 
         function renderCurrentOrder() {
+            const currentOrderItemsEl = document.getElementById('modal-current-order-items');
+            const totalPriceEl = document.getElementById('modal-total-price');
+            const submitOrderBtn = document.getElementById('modal-submit-order-btn');
+            
             if (currentOrder.length === 0) {
-                currentOrderItemsEl.innerHTML = '<p class="text-gray-400 text-center mt-2 text-sm">เลือกเมนูจากด้านบนเพื่อเริ่ม...</p>';
+                currentOrderItemsEl.innerHTML = '<p class="text-gray-400 text-center mt-2 text-sm">เลือกเมนูจากด้านซ้ายเพื่อเริ่ม...</p>';
                 submitOrderBtn.disabled = true;
             } else {
                 currentOrderItemsEl.innerHTML = '';
@@ -1020,7 +1022,8 @@
                 });
                 submitOrderBtn.disabled = false;
             }
-            updateTotalPrice();
+            const total = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            totalPriceEl.textContent = `฿${total.toLocaleString('th-TH')}`;
         }
 
         function updateOrderItemSweetness(orderItemId, newSweetness) {
@@ -1035,6 +1038,7 @@
                 }
             }
             renderCurrentOrder();
+            updateQueueTracker(); // Update cart badge
         }
         
         function updateOrderItemSize(orderItemId, newSize) {
@@ -1055,6 +1059,7 @@
                 }
             }
             renderCurrentOrder();
+            updateQueueTracker(); // Update cart badge
         }
         
         function updateOrderItemQuantity(orderItemId, change) {
@@ -1066,25 +1071,21 @@
                 return;
             }
             renderCurrentOrder();
+            updateQueueTracker(); // Update cart badge
         }
 
         function removeOrderItem(orderItemId) {
             currentOrder = currentOrder.filter(item => item.id !== orderItemId);
             renderCurrentOrder();
+            updateQueueTracker(); // Update cart badge
         }
 
-        function updateTotalPrice() {
-            const total = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
-            totalPriceEl.textContent = `฿${total.toLocaleString('th-TH')}`;
-        }
-
-        // 🔥 UPDATED: Submit Order 🔥
-        submitOrderBtn.addEventListener('click', () => {
+        // 🔥 UPDATED: Submit Order (Using Modal Inputs) 🔥
+        modalSubmitOrderBtn.addEventListener('click', () => {
             const orderTotal = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
-            const address = deliveryAddressInput.value.trim(); 
-            const notes = orderNotesInput.value.trim(); 
+            const address = modalDeliveryAddressInput.value.trim(); 
+            const notes = modalOrderNotesInput.value.trim(); 
             
-            // 1. CHECK IF CART IS EMPTY (REQUIRED)
             if (currentOrder.length === 0) {
                  alert("กรุณาเลือกเมนูอย่างน้อย 1 รายการก่อนส่งออเดอร์");
                  return; 
@@ -1116,12 +1117,14 @@
                      contactLineURL: contactLineURL 
                 };
                 
-                // Clear inputs
+                // Clear inputs/state
                 currentOrder = []; 
-                deliveryAddressInput.value = '';
-                orderNotesInput.value = ''; 
+                modalDeliveryAddressInput.value = '';
+                modalOrderNotesInput.value = ''; 
                 
+                closeOrderEntryModal(); // Close the modal
                 renderCurrentOrder(); 
+                updateQueueTracker(); // Update cart badge
                 showPaymentQRModal(orderTotal);
             })
             .catch(error => {
@@ -1130,9 +1133,8 @@
             });
         });
 
-        // 🔥 UPDATED: renderOrderQueue (Line Chat เปิดแอป Line เท่านั้น) 🔥
+        // --- Queue and Sales Logic (Retained) ---
         function renderOrderQueue() {
-            // Filter out 'เสร็จแล้ว' and 'ยกเลิก' to show only active queue items
             const displayQueue = orderQueue.filter(order => order.status !== 'เสร็จแล้ว' && order.status !== 'ยกเลิก');
 
             if (displayQueue.length === 0) {
@@ -1173,7 +1175,6 @@
                 let lineContactButton = ''; 
 
                 if (isOwnerLoggedIn) {
-                    // OWNER VIEW: Show full header and action buttons
                     orderHeader = `คิวที่ #${queueNumber} | ออเดอร์ #${order.id.substring(0, 8)}...`;
                     
                     let contactLink = null;
@@ -1252,7 +1253,6 @@
             });
         }
         
-        // --- Sales & Report Logic (Simplified) ---
         function updateOrderStatus(orderId, newStatus) {
             if (!isOwnerLoggedIn) {
                 alert("ปฏิเสธ: คุณไม่มีสิทธิ์จัดการออเดอร์นี้ (กรุณา Login ด้วยสิทธิ์เจ้าของร้าน)");
@@ -1301,7 +1301,7 @@
                 if (isToday(saleDate)) { salesToday += totalRevenue; }
             });
             
-            salesTodayEl.textContent = `฿${salesToday.toLocaleString('th-TH')}`;
+            document.getElementById('sales-today').textContent = `฿${salesToday.toLocaleString('th-TH')}`;
         }
 
         function showMenuReport() {
@@ -1332,8 +1332,8 @@
                 });
                 tableHTML += '</tbody></table>';
             }
-            menuReportContent.innerHTML = tableHTML;
-            menuReportModal.classList.remove('hidden');
+            document.getElementById('menu-report-content').innerHTML = tableHTML;
+            document.getElementById('menu-report-modal').classList.remove('hidden');
         }
 
         // --- Initial setup ---
