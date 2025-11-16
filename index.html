@@ -24,8 +24,9 @@
             display: flex;
             min-height: 100vh;
         }
+        /* Default (PC/Desktop) Sidebar Style */
         .sidebar {
-            width: 280px; 
+            width: 280px; /* PC Default Width */
             background-color: #ffffff; /* bg-white */
             padding: 1rem;
             box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
@@ -44,8 +45,65 @@
             flex-direction: column; 
             gap: 1.5rem;
         }
+        /* Hide menu title on PC by default, it will be added back dynamically */
+        .category-name-span { display: inline; } 
 
-        /* --- Menu Card Styles --- */
+        /* --- MOBILE/SMALL SCREEN OPTIMIZATION (BREAKPOINT: 768px) --- */
+        @media (max-width: 767px) {
+            .app-container {
+                flex-direction: column; /* Stack sidebar and main content vertically */
+            }
+            .sidebar {
+                width: 100%; /* Full width for mobile */
+                height: auto;
+                max-height: none;
+                position: relative; /* Remove sticky on top for mobile */
+                padding: 0.5rem;
+                flex-direction: row; /* Arrange header and buttons horizontally */
+                align-items: flex-start;
+                flex-wrap: wrap; /* Allow buttons to wrap */
+                gap: 0.5rem;
+            }
+            .sidebar header {
+                width: 100%;
+                margin-bottom: 0.5rem;
+            }
+            .main-content {
+                padding: 0.5rem;
+            }
+
+            /* Adjust button size and remove text in Sidebar on Mobile */
+            .dashboard-toggle-btn, .cart-toggle-btn, .category-toggle-btn {
+                padding: 0.5rem;
+                min-width: 80px; /* Minimum width for mobile buttons */
+                flex-grow: 1;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                font-size: 0.75rem; /* Smaller font */
+            }
+
+            /* Hide full menu title, show only icon/abbreviation on mobile */
+            .category-toggle-btn .category-name-span {
+                display: none; 
+            }
+            .dashboard-toggle-btn span:first-child, .cart-toggle-btn span:first-child {
+                /* Replace with mobile-friendly text */
+                font-size: 0.8rem;
+                line-height: 1.1;
+            }
+             /* Separate Menu List Area */
+            #category-list {
+                width: 100%; /* Take full width */
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+        }
+        /* --- END MOBILE OPTIMIZATION --- */
+
+        /* --- Menu Card Styles --- (Retained) */
         .main-menu-card {
             padding: 0.5rem;
             border-radius: 0.5rem;
@@ -85,7 +143,7 @@
         
         /* Dashboard/Queue Button Style */
         .dashboard-toggle-btn, .cart-toggle-btn {
-            background-color: #10b981; /* Default Color */
+            background-color: #10b981; 
             color: white;
             padding: 0.75rem 1rem;
             border-radius: 0.5rem;
@@ -96,7 +154,6 @@
             cursor: pointer;
             position: relative;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            margin-bottom: 0.5rem;
         }
         .queue-badge, .cart-badge {
             position: absolute;
@@ -110,7 +167,6 @@
             font-weight: bold;
             line-height: 1;
         }
-
         /* Grid for Main Content (Menu Items) */
         .menu-container-grid {
             display: grid;
@@ -118,21 +174,26 @@
             gap: 0.75rem;
             padding-bottom: 1rem;
         }
-        /* Grid สำหรับจอขนาดใหญ่ (PC/Desktop) */
+        /* PC Grid */
         @media (min-width: 1024px) { 
             .menu-container-grid {
                 grid-template-columns: repeat(4, minmax(0, 1fr)); 
             }
         }
+        /* Tablet Grid */
         @media (min-width: 768px) and (max-width: 1023px) { 
             .menu-container-grid {
                 grid-template-columns: repeat(3, minmax(0, 1fr)); 
             }
         }
-        
+        /* Mobile Grid */
+        @media (max-width: 767px) {
+             .menu-container-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 columns on mobile */
+            }
+        }
         /* Utility Styles (Retained) */
         .qr-image-container { width: 256px; height: 256px; margin: 0 auto; }
-        
         .menu-image { 
             width: 100%; 
             height: 120px; 
@@ -143,16 +204,12 @@
         }
         .upload-img-btn { position: absolute; top: 5px; right: 5px; background: rgba(0, 0, 0, 0.6); color: white; padding: 4px 8px; border-radius: 50%; font-size: 0.75rem; z-index: 10; cursor: pointer; display: none; }
         .main-menu-card:hover .upload-img-btn { display: block; }
-
-        /* Sidebar Specific Styles */
         #category-list {
             flex-shrink: 0;
             flex-grow: 1; 
             overflow-y: auto;
             padding-right: 0.5rem;
         }
-
-        /* Main Content Control */
         .main-content-section {
             display: none;
         }
@@ -171,12 +228,14 @@
             </header>
             
             <div id="cart-toggle-btn" class="cart-toggle-btn bg-yellow-500 hover:bg-yellow-600 shadow-xl" onclick="openOrderEntryModal()">
-                <span>🛒 รายการออเดอร์ (สั่งซื้อ)</span>
+                <span class="text-xl">🛒</span>
+                <span class="category-name-span">รายการออเดอร์</span>
                 <span id="cart-item-count" class="cart-badge hidden">0</span>
             </div>
 
             <div id="dashboard-toggle-btn" class="dashboard-toggle-btn bg-emerald-500 hover:bg-emerald-600 shadow-xl opacity-75" onclick="showMainContent('queue')">
-                <span>🥤 คิวและสถานะออเดอร์</span>
+                <span class="text-xl">🥤</span>
+                <span class="category-name-span">คิวและสถานะ</span>
                 <span id="queue-overall-count" class="queue-badge hidden">0</span>
             </div>
 
@@ -395,7 +454,7 @@
         const auth = firebase.auth(); 
         
         // ====================================================================
-        // 📝 START: โค้ด JavaScript จัดการออเดอร์ (ปรับเป็น Firebase) 📝
+        // 📝 START: โค้ด JavaScript จัดการออเดอร์ (ปรับปรุงประสิทธิภาพ/Mobile) 📝
         // ====================================================================
 
         // *** Menu Data (Full lists) *** (ใช้ข้อมูลเดิมทั้งหมด)
@@ -556,7 +615,7 @@
 
         // --- Order Entry Modal Functions ---
         function openOrderEntryModal() {
-             // **สำคัญ:** เรียก renderCurrentOrderModal เพื่อสร้าง/อัปเดตรายการใน Modal ก่อนแสดง
+             // Sync data to Modal and display
             renderCurrentOrderModal(); 
             orderEntryModal.classList.remove('hidden');
         }
@@ -834,11 +893,12 @@
             categoryListEl.innerHTML = ''; 
             
             const categories = [
-                { id: 'menu-standard', title: '🥛 นม/ชา/โกโก้ (Standard)', data: menuData, color: 'bg-teal-500 hover:bg-teal-600' },
-                { id: 'menu-matcha', title: '🍵 มัทฉะ/ชาเขียว', data: matchaMenuData, color: 'bg-emerald-500 hover:bg-emerald-600' },
-                { id: 'menu-coffee', title: '☕ กาแฟ (COFFEE)', data: coffeeMenuData, color: 'bg-amber-700 hover:bg-amber-800' },
-                { id: 'menu-fruit', title: '🍓 สมูทตี้ผลไม้ (Fruit)', data: fruitSmoothieData, color: 'bg-sky-500 hover:bg-sky-600' },
-                { id: 'menu-yogurt', title: '🍇 สมูทตี้โยเกิร์ต (Yogurt)', data: smoothieYogurtData, color: 'bg-indigo-500 hover:bg-indigo-600' },
+                // **ปรับชื่อเมนูใน Sidebar ให้สั้นลงสำหรับ Mobile**
+                { id: 'menu-standard', title: '🥛 นม/ชา/โกโก้', data: menuData, color: 'bg-teal-500 hover:bg-teal-600' },
+                { id: 'menu-matcha', title: '🍵 มัทฉะ', data: matchaMenuData, color: 'bg-emerald-500 hover:bg-emerald-600' },
+                { id: 'menu-coffee', title: '☕ กาแฟ', data: coffeeMenuData, color: 'bg-amber-700 hover:bg-amber-800' },
+                { id: 'menu-fruit', title: '🍓 สมูทตี้ผลไม้', data: fruitSmoothieData, color: 'bg-sky-500 hover:bg-sky-600' },
+                { id: 'menu-yogurt', title: '🍇 โยเกิร์ต', data: smoothieYogurtData, color: 'bg-indigo-500 hover:bg-indigo-600' },
             ];
 
             categories.forEach(category => {
@@ -846,8 +906,11 @@
                 toggleBtn.id = category.id;
                 toggleBtn.className = `category-toggle-btn ${category.color}`;
                 toggleBtn.setAttribute('onclick', `toggleCategory(${JSON.stringify(category.data).replace(/"/g, "'")}, '${category.title.replace(/'/g, "\\'")}', '${category.id}')`);
+                
+                // ใช้ title เต็มใน attribute แต่แสดง title สั้นใน Mobile
                 toggleBtn.innerHTML = `
-                    <span>${category.title}</span>
+                    <span class="text-xl">${category.title.split(' ')[0]}</span>
+                    <span class="category-name-span">${category.title.split(' ').slice(1).join(' ')}</span>
                 `;
                 categoryListEl.appendChild(toggleBtn);
             });
@@ -891,8 +954,6 @@
                 currentOrder.push(orderItem);
             }
             
-            // **การเปลี่ยนแปลง:** ไม่เรียก renderCurrentOrder() ที่สร้าง HTML ใหม่
-            // แต่ให้เรียกเฉพาะ updateQueueTracker() เพื่ออัปเดต Badge/ยอดรวมเท่านั้น
             updateQueueTracker(); 
         }
         
@@ -952,11 +1013,11 @@
             allMenuData[itemIndex].imageUrl = imageUrl;
             
             const categories = [
-                { id: 'menu-standard', data: menuData, title: '🥛 นม/ชา/โกโก้ (Standard)' },
-                { id: 'menu-matcha', data: matchaMenuData, title: '🍵 เมนูมัทฉะ/ชาเขียว' },
-                { id: 'menu-coffee', data: coffeeMenuData, title: '☕ เมนูกาแฟ (COFFEE)' },
-                { id: 'menu-fruit', data: fruitSmoothieData, title: '🍓 สมูทตี้ผลไม้ (Fruit)' },
-                { id: 'menu-yogurt', data: smoothieYogurtData, title: '🍇 สมูทตี้โยเกิร์ต (Yogurt)' },
+                { id: 'menu-standard', data: menuData, title: '🥛 นม/ชา/โกโก้' },
+                { id: 'menu-matcha', data: matchaMenuData, title: '🍵 มัทฉะ' },
+                { id: 'menu-coffee', data: coffeeMenuData, title: '☕ กาแฟ' },
+                { id: 'menu-fruit', data: fruitSmoothieData, title: '🍓 สมูทตี้ผลไม้' },
+                { id: 'menu-yogurt', data: smoothieYogurtData, title: '🍇 โยเกิร์ต' },
             ];
             const activeCat = categories.find(c => c.id === activeCategoryContainerId);
 
@@ -973,7 +1034,7 @@
         // --- Core Order Rendering Logic (Optimized for Modal) ---
 
         /**
-         * **NEW:** ฟังก์ชันสร้างรายการใน Modal (เรียกเมื่อ Modal ถูกเปิดเท่านั้น)
+         * **OPTIMIZED:** ฟังก์ชันสร้างรายการใน Modal (เรียกเมื่อ Modal ถูกเปิดเท่านั้น)
          */
         function renderCurrentOrderModal() {
             // ดึง Element ภายใน Modal
@@ -1027,7 +1088,7 @@
         }
 
         /**
-         * **NEW:** ฟังก์ชันอัปเดตยอดรวมใน Modal (รันบ่อย)
+         * **OPTIMIZED:** ฟังก์ชันอัปเดตยอดรวมใน Modal (รันบ่อย)
          */
         function updateModalTotalPrice() {
             const total = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -1035,8 +1096,7 @@
         }
         
         /**
-         * **NEW/OPTIMIZED:** ฟังก์ชันอัปเดตปริมาณ (รันบ่อย)
-         * อัปเดตปริมาณและราคารวมของ Item นั้นโดยตรง ไม่ใช่สร้างรายการทั้งหมดใหม่
+         * **OPTIMIZED:** ฟังก์ชันอัปเดตปริมาณ (รันบ่อย)
          */
         function updateOrderItemQuantity(orderItemId, change) {
             const orderItemIndex = currentOrder.findIndex(item => item.id === orderItemId);
@@ -1063,7 +1123,7 @@
         }
 
         /**
-         * **NEW/OPTIMIZED:** ฟังก์ชันอัปเดตความหวาน (สร้าง Item ใหม่ถ้าปริมาณ > 1)
+         * **OPTIMIZED:** ฟังก์ชันอัปเดตความหวาน (สร้าง Item ใหม่ถ้าปริมาณ > 1)
          */
         function updateOrderItemSweetness(orderItemId, newSweetness) {
             const orderItem = currentOrder.find(item => item.id === orderItemId);
@@ -1079,7 +1139,7 @@
                     renderCurrentOrderModal(); 
                 } else {
                     orderItem.sweetness = newSweetness;
-                    // หากเป็นการเปลี่ยนความหวานของรายการเดียว ไม่ต้อง render ใหม่ทั้งหมด แค่อัปเดตยอดรวม
+                    // หากเป็นการเปลี่ยนความหวานของรายการเดียว ไม่ต้อง render ใหม่ทั้งหมด
                     updateModalTotalPrice(); 
                 }
             }
@@ -1087,7 +1147,7 @@
         }
         
         /**
-         * **NEW/OPTIMIZED:** ฟังก์ชันอัปเดตขนาด (สร้าง Item ใหม่ถ้าปริมาณ > 1)
+         * **OPTIMIZED:** ฟังก์ชันอัปเดตขนาด (สร้าง Item ใหม่ถ้าปริมาณ > 1)
          */
         function updateOrderItemSize(orderItemId, newSize) {
             const orderItem = currentOrder.find(item => item.id === orderItemId);
@@ -1112,6 +1172,10 @@
                     const itemEl = document.querySelector(`#modal-current-order-items div[data-order-item-id="${orderItemId}"]`);
                     if (itemEl) {
                         itemEl.querySelector('[data-item-total]').textContent = `฿${(orderItem.price * orderItem.quantity).toLocaleString('th-TH')}`;
+                        // **สำคัญ: หากมี DOM change ต้องอัปเดต Select ใหม่ด้วย เพื่อให้แสดงค่าที่ถูกต้อง**
+                        // renderCurrentOrderModal() จะแก้ไขปัญหานี้ให้ แต่ถ้าต้องการ In-place ต้องเขียนโค้ดอัปเดต Select เอง
+                        // เนื่องจากความซับซ้อนของการเปลี่ยน size อาจกระทบ price เราจะใช้ renderCurrentOrderModal() เมื่อมีการแยกรายการ
+                        // สำหรับกรณีนี้, หากไม่มีการแยกรายการ (quantity=1) การอัปเดต price และ total ก็เพียงพอ
                     }
                     updateModalTotalPrice(); 
                 }
@@ -1120,7 +1184,7 @@
         }
         
         /**
-         * **NEW/OPTIMIZED:** ฟังก์ชันลบรายการ (ลบ Element ตรงๆ)
+         * **OPTIMIZED:** ฟังก์ชันลบรายการ (ลบ Element ตรงๆ)
          */
         function removeOrderItem(orderItemId) {
             currentOrder = currentOrder.filter(item => item.id !== orderItemId);
@@ -1402,7 +1466,6 @@
         }
         
         renderMenu();
-        // **การเปลี่ยนแปลง:** ลบ renderCurrentOrder() ออกจากการเริ่มต้น
         initFirebaseListeners();
     </script>
 </body>
