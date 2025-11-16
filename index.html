@@ -155,11 +155,6 @@
                     </div>
                     
                     <div class="mb-4">
-                        <label for="contact-info" class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร/Line ID ที่ติดต่อได้</label>
-                        <input type="text" id="contact-info" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="เช่น 08x-xxxxxxx หรือ Line ID ของคุณ">
-                    </div>
-                    
-                    <div class="mb-4">
                         <label for="delivery-address" class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่จัดส่ง (หากมี, เว้นว่างหากรับเอง)</label>
                         <textarea id="delivery-address" rows="3" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="กรอกรายละเอียดที่อยู่จัดส่งที่นี่"></textarea>
                     </div>
@@ -419,7 +414,7 @@
         const orderQueueEl = document.getElementById('order-queue');
         
         // --- UPDATED INPUTS ---
-        const contactInfoInput = document.getElementById('contact-info'); 
+        // const contactInfoInput = document.getElementById('contact-info'); // ลบออก
         const deliveryAddressInput = document.getElementById('delivery-address'); 
         const orderNotesInput = document.getElementById('order-notes'); 
         // ----------------------
@@ -460,17 +455,16 @@
         
         /**
          * Generates the Line message and opens the chat window.
-         * * ใช้ Line Scheme (line://msg/text/) เพื่อบังคับให้เปิดแอป Line/Share Sheet บนมือถือ
-         * @param {boolean} openChat - If true, opens the chat window.
-         * @returns {string} The Line URL for Firestore (HTTPS Link)
          */
         function sendLineMessage(openChat = false, manualContactInfo = null, manualAddress = null, manualTotal = null, manualNotes = null) {
-            // Use lastCommittedOrder if available, otherwise use current input values or manual overrides
+            // NOTE: contactInfo ถูก hardcode เป็น 'ไม่ระบุช่องทางติดต่อ' ใน submit handler
+            const contactInfo = manualContactInfo !== null ? manualContactInfo : 'ไม่ระบุช่องทางติดต่อ'; 
+
             const data = lastCommittedOrder || { 
                 id: 'PENDING',
                 items: currentOrder,
                 total: manualTotal !== null ? manualTotal : currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0),
-                contactInfo: manualContactInfo !== null ? manualContactInfo : contactInfoInput.value.trim(),
+                contactInfo: contactInfo,
                 address: manualAddress !== null ? manualAddress : (deliveryAddressInput.value.trim() || 'รับเองที่ร้าน'),
                 notes: manualNotes !== null ? manualNotes : orderNotesInput.value.trim()
             };
@@ -508,9 +502,6 @@
 
         /**
          * คัดลอกเลขออเดอร์ไปยังคลิปบอร์ดและเปิดแอป Line/โทรออก 
-         * @param {string} orderId - Document ID ของ Order (ใช้สำหรับคัดลอก)
-         * @param {string} contactLink - Link สำหรับเปิดแอป Line หรือโทรออก (tel:)
-         * @param {string} buttonText - ข้อความบนปุ่ม (Line Chat, โทรออก)
          */
         function copyAndOpenLine(orderId, contactLink, buttonText) {
             const shortOrderId = `#${orderId.substring(0, 8)}`; // #c4ga3DW4
@@ -947,10 +938,9 @@
         }
 
 
-        // 🔥 UPDATED: Submit Order (พร้อม Validation และบันทึก URL) 🔥
+        // 🔥 UPDATED: Submit Order (ปรับปรุงการจัดการ contactInfo) 🔥
         submitOrderBtn.addEventListener('click', () => {
             const orderTotal = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
-            const rawContactInfo = contactInfoInput.value.trim(); 
             const address = deliveryAddressInput.value.trim(); 
             const notes = orderNotesInput.value.trim(); 
             
@@ -960,26 +950,11 @@
                  return; 
             }
             
-            // 2. CHECK DELIVERY ADDRESS
-            const isPickup = address === '';
+            // 2. กำหนด contactInfo เป็นค่าเริ่มต้นเนื่องจากลบช่องกรอกออกแล้ว
+            // ทุกออเดอร์จะถือเป็น 'รับเอง' และ 'ไม่มีช่องทางติดต่อ' (หรือระบุที่อยู่จัดส่งเท่านั้น)
+            const contactInfo = 'ไม่ระบุช่องทางติดต่อ'; 
             
-            // 3. CHECK CONTACT INFO AND ADDRESS
-            let contactInfo = rawContactInfo;
-            
-            if (!isPickup && contactInfo === '') {
-                 // ถ้าเป็นการจัดส่ง (Delivery) แต่ไม่กรอกข้อมูลติดต่อ ถือว่าไม่ผ่าน
-                 alert("หากต้องการให้จัดส่ง กรุณากรอกเบอร์โทรศัพท์หรือ Line ID ที่สามารถติดต่อได้");
-                 contactInfoInput.focus();
-                 return;
-            } else if (isPickup && contactInfo === '') {
-                 // ถ้าเป็นการรับเอง (Pickup) และไม่กรอกข้อมูลติดต่อ: อนุโลม
-                 if (!confirm("คุณไม่ได้กรอกข้อมูลติดต่อและไม่ได้กรอกที่อยู่ จะถือเป็น 'รับเองที่ร้าน' โดยไม่มีช่องทางติดต่อกลับ หากยืนยัน โปรดกด OK")) { 
-                      return; 
-                 }
-                 contactInfo = 'รับเอง_ไม่มีช่องทางติดต่อ';
-            }
-            
-            // 4. Generate the Line Chat URL (for owner tracking)
+            // 3. Generate the Line Chat URL (for owner tracking)
             const contactLineURL = sendLineMessage(false, contactInfo, address || 'รับเองที่ร้าน', orderTotal, notes); 
             
             // --- Proceed with submission ---
@@ -987,8 +962,8 @@
             db.collection("orders").add({ 
                 items: currentOrder,
                 total: orderTotal,
-                contactInfo: contactInfo,
-                contactLineURL: contactLineURL, // Save the Line OA Link with Order ID message
+                contactInfo: contactInfo, // บันทึกเป็น 'ไม่ระบุช่องทางติดต่อ'
+                contactLineURL: contactLineURL,
                 address: address || 'รับเองที่ร้าน',
                 notes: notes, 
                 status: 'คิว',
@@ -1009,7 +984,7 @@
                 
                 // Clear inputs
                 currentOrder = []; 
-                contactInfoInput.value = ''; 
+                // contactInfoInput.value = ''; // ไม่มีแล้ว
                 deliveryAddressInput.value = '';
                 orderNotesInput.value = ''; 
                 
@@ -1053,16 +1028,16 @@
                     notesDisplay = `<p class="text-xs text-red-600 font-semibold mt-1">📝 หมายเหตุ: ${order.notes.trim()}</p>`;
                 }
                 
-                // Show contact info only if not the default placeholder
+                // แสดงข้อมูลติดต่อ: ตอนนี้จะมีค่าเป็น 'ไม่ระบุช่องทางติดต่อ' เสมอ
                 let contactDisplay = '';
-                if (order.contactInfo && order.contactInfo !== 'รับเอง_ไม่มีช่องทางติดต่อ') {
+                if (order.contactInfo && order.contactInfo !== 'ไม่ระบุช่องทางติดต่อ') {
                      contactDisplay = `<p class="text-xs text-gray-800 font-semibold mt-1">📱 ติดต่อ: ${order.contactInfo}</p>`;
-                } else if (order.contactInfo === 'รับเอง_ไม่มีช่องทางติดต่อ') {
+                } else {
                      contactDisplay = `<p class="text-xs text-red-500 font-semibold mt-1">🚫 ไม่ระบุช่องทางติดต่อ</p>`;
                 }
 
                 let sourceTagDisplay = '';
-                let lineContactButton = ''; // NEW Button variable
+                let lineContactButton = ''; 
 
                 if (isOwnerLoggedIn) {
                     // OWNER VIEW: Show full header and action buttons
@@ -1077,7 +1052,8 @@
                     let iconSvg = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>`;
 
                     // 1. ตรวจสอบเบอร์โทรศัพท์ (ถ้ามี ให้ใช้ Tel: Link เพื่อแยกฟังก์ชัน)
-                    if (order.contactInfo && order.contactInfo !== 'รับเอง_ไม่มีช่องทางติดต่อ') {
+                    // NOTE: ตอนนี้ contactInfo จะมีค่าเป็น 'ไม่ระบุ...' เสมอ ยกเว้นถ้าโค้ดเดิมของคุณมีบางออเดอร์ที่ยังมีเบอร์โทรอยู่
+                    if (order.contactInfo && order.contactInfo !== 'ไม่ระบุช่องทางติดต่อ') {
                         const contact = order.contactInfo.trim().replace(/-/g, '');
                         if (contact.match(/^0\d{9}$/) || contact.match(/^\d{9,10}$/)) { 
                             contactLink = `tel:${contact}`;
@@ -1095,7 +1071,6 @@
                     }
 
                     // สร้างปุ่มที่คัดลอก ID แล้วเปิด Link (ใช้ copyAndOpenLine)
-                    // หมายเหตุ: ปุ่มนี้จะคัดลอกเลขออเดอร์ แล้วสั่งเปิดแอป Line ขึ้นมาเท่านั้น
                     lineContactButton = `<button onclick="copyAndOpenLine('${order.id}', '${contactLink.replace(/'/g, "\\'")}', '${buttonText.replace(/'/g, "\\'")}')" 
                                             class="text-xs ${buttonColor} text-white font-bold py-1 px-3 rounded-lg flex items-center space-x-1">
                                             ${iconSvg}
