@@ -27,7 +27,7 @@
         /* Default (PC/Desktop) Sidebar Style */
         .sidebar {
             width: 280px; /* PC Default Width */
-            background-color: #ffffff; /* bg-white */
+            background-color: #ffffff; 
             padding: 1rem;
             box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
             position: sticky;
@@ -45,55 +45,57 @@
             flex-direction: column; 
             gap: 1.5rem;
         }
-        /* Hide menu title on PC by default, it will be added back dynamically */
-        .category-name-span { display: inline; } 
-
-        /* --- MOBILE/SMALL SCREEN OPTIMIZATION (BREAKPOINT: 768px) --- */
+        
+        /* --- MOBILE/SMALL SCREEN OPTIMIZATION (BREAKPOINT: 767px) --- */
         @media (max-width: 767px) {
             .app-container {
                 flex-direction: column; /* Stack sidebar and main content vertically */
             }
             .sidebar {
-                width: 100%; /* Full width for mobile */
+                width: 100%; /* Full width for mobile to resolve overflowing */
                 height: auto;
                 max-height: none;
-                position: relative; /* Remove sticky on top for mobile */
+                position: relative; 
                 padding: 0.5rem;
-                flex-direction: row; /* Arrange header and buttons horizontally */
+                flex-direction: row; 
                 align-items: flex-start;
-                flex-wrap: wrap; /* Allow buttons to wrap */
+                flex-wrap: wrap; 
                 gap: 0.5rem;
             }
             .sidebar header {
                 width: 100%;
                 margin-bottom: 0.5rem;
+                /* ซ่อนหัวข้อ "เมนูสั่งซื้อ" บนมือถือเพื่อให้เหลือที่ว่าง */
+                display: none; 
             }
             .main-content {
                 padding: 0.5rem;
             }
 
-            /* Adjust button size and remove text in Sidebar on Mobile */
+            /* Adjust main button text/icons in Sidebar on Mobile */
             .dashboard-toggle-btn, .cart-toggle-btn, .category-toggle-btn {
                 padding: 0.5rem;
-                min-width: 80px; /* Minimum width for mobile buttons */
+                min-width: 70px; 
                 flex-grow: 1;
+                flex-basis: auto; /* Allow buttons to wrap more naturally */
                 flex-direction: column;
                 justify-content: center;
                 align-items: center;
                 text-align: center;
-                font-size: 0.75rem; /* Smaller font */
+                font-size: 0.75rem; 
+            }
+            
+            /* Hide the long text in main buttons and categories */
+            .main-button-text-mobile {
+                 display: none; 
+            }
+             /* Force the icon and short label to show */
+            .category-toggle-btn .text-xl, .main-button-short-label {
+                display: block; 
+                font-size: 1rem; /* Smaller icons/text on mobile */
             }
 
-            /* Hide full menu title, show only icon/abbreviation on mobile */
-            .category-toggle-btn .category-name-span {
-                display: none; 
-            }
-            .dashboard-toggle-btn span:first-child, .cart-toggle-btn span:first-child {
-                /* Replace with mobile-friendly text */
-                font-size: 0.8rem;
-                line-height: 1.1;
-            }
-             /* Separate Menu List Area */
+             /* Separate Category List Area */
             #category-list {
                 width: 100%; /* Take full width */
                 display: flex;
@@ -103,29 +105,20 @@
         }
         /* --- END MOBILE OPTIMIZATION --- */
 
-        /* --- Menu Card Styles --- (Retained) */
-        .main-menu-card {
-            padding: 0.5rem;
+
+        /* Dashboard/Queue Button Style (Adjusted classes for Mobile) */
+        .dashboard-toggle-btn, .cart-toggle-btn {
+            background-color: #10b981; 
+            color: white;
+            padding: 0.75rem 1rem;
             border-radius: 0.5rem;
-            text-align: center;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             cursor: pointer;
-            transition: transform 0.1s;
-            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
             position: relative;
-        }
-        .main-menu-card:hover {
-            transform: scale(1.02);
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
-        .menu-name {
-            font-weight: 600;
-            font-size: 0.9rem;
-            line-height: 1.1;
-            margin-bottom: 0.25rem;
-        }
-        .menu-price-tag {
-            font-weight: 700;
-            font-size: 0.8rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
         .category-toggle-btn {
             display: flex;
@@ -140,21 +133,8 @@
             margin-bottom: 0.5rem;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
-        
-        /* Dashboard/Queue Button Style */
-        .dashboard-toggle-btn, .cart-toggle-btn {
-            background-color: #10b981; 
-            color: white;
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-            position: relative;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-        }
+
+        /* Badge Styles (Retained) */
         .queue-badge, .cart-badge {
             position: absolute;
             top: -10px;
@@ -167,55 +147,39 @@
             font-weight: bold;
             line-height: 1;
         }
-        /* Grid for Main Content (Menu Items) */
+
+        /* Menu Card Styles (Retained) */
+        .main-menu-card {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            position: relative;
+        }
+        .menu-name { font-weight: 600; font-size: 0.9rem; line-height: 1.1; margin-bottom: 0.25rem; }
+        .menu-price-tag { font-weight: 700; font-size: 0.8rem; }
+        .menu-image { width: 100%; height: 120px; object-fit: cover; border-radius: 0.25rem; margin-bottom: 0.5rem; border: 1px solid #e5e7eb; }
+        .upload-img-btn { position: absolute; top: 5px; right: 5px; background: rgba(0, 0, 0, 0.6); color: white; padding: 4px 8px; border-radius: 50%; font-size: 0.75rem; z-index: 10; cursor: pointer; display: none; }
+        .main-menu-card:hover .upload-img-btn { display: block; }
+        .main-content-section { display: none; }
+        .main-content-section.active { display: block; }
+        
+        /* Grid for Main Content (Retained, Mobile-friendly) */
         .menu-container-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr)); 
             gap: 0.75rem;
             padding-bottom: 1rem;
         }
-        /* PC Grid */
         @media (min-width: 1024px) { 
-            .menu-container-grid {
-                grid-template-columns: repeat(4, minmax(0, 1fr)); 
-            }
+            .menu-container-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
         }
-        /* Tablet Grid */
         @media (min-width: 768px) and (max-width: 1023px) { 
-            .menu-container-grid {
-                grid-template-columns: repeat(3, minmax(0, 1fr)); 
-            }
+            .menu-container-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         }
-        /* Mobile Grid */
-        @media (max-width: 767px) {
-             .menu-container-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 columns on mobile */
-            }
-        }
-        /* Utility Styles (Retained) */
-        .qr-image-container { width: 256px; height: 256px; margin: 0 auto; }
-        .menu-image { 
-            width: 100%; 
-            height: 120px; 
-            object-fit: cover; 
-            border-radius: 0.25rem; 
-            margin-bottom: 0.5rem; 
-            border: 1px solid #e5e7eb; 
-        }
-        .upload-img-btn { position: absolute; top: 5px; right: 5px; background: rgba(0, 0, 0, 0.6); color: white; padding: 4px 8px; border-radius: 50%; font-size: 0.75rem; z-index: 10; cursor: pointer; display: none; }
-        .main-menu-card:hover .upload-img-btn { display: block; }
-        #category-list {
-            flex-shrink: 0;
-            flex-grow: 1; 
-            overflow-y: auto;
-            padding-right: 0.5rem;
-        }
-        .main-content-section {
-            display: none;
-        }
-        .main-content-section.active {
-            display: block;
-        }
+
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
@@ -229,13 +193,15 @@
             
             <div id="cart-toggle-btn" class="cart-toggle-btn bg-yellow-500 hover:bg-yellow-600 shadow-xl" onclick="openOrderEntryModal()">
                 <span class="text-xl">🛒</span>
-                <span class="category-name-span">รายการออเดอร์</span>
+                <span class="main-button-short-label">ออเดอร์</span>
+                <span class="main-button-text-mobile">รายการออเดอร์ (สั่งซื้อ)</span>
                 <span id="cart-item-count" class="cart-badge hidden">0</span>
             </div>
 
             <div id="dashboard-toggle-btn" class="dashboard-toggle-btn bg-emerald-500 hover:bg-emerald-600 shadow-xl opacity-75" onclick="showMainContent('queue')">
                 <span class="text-xl">🥤</span>
-                <span class="category-name-span">คิวและสถานะ</span>
+                <span class="main-button-short-label">คิว</span>
+                <span class="main-button-text-mobile">คิวและสถานะออเดอร์</span>
                 <span id="queue-overall-count" class="queue-badge hidden">0</span>
             </div>
 
@@ -454,7 +420,7 @@
         const auth = firebase.auth(); 
         
         // ====================================================================
-        // 📝 START: โค้ด JavaScript จัดการออเดอร์ (ปรับปรุงประสิทธิภาพ/Mobile) 📝
+        // 📝 START: โค้ด JavaScript จัดการออเดอร์ 📝
         // ====================================================================
 
         // *** Menu Data (Full lists) *** (ใช้ข้อมูลเดิมทั้งหมด)
@@ -609,6 +575,7 @@
         }
         
         function showPaymentQRModal(orderTotal) {
+            const qrTotalAmountEl = document.getElementById('qr-total-amount'); // Ensure this element is retrieved
             qrTotalAmountEl.textContent = `฿${orderTotal.toLocaleString('th-TH')}`;
             document.getElementById('qr-payment-modal').classList.remove('hidden');
         }
@@ -910,7 +877,7 @@
                 // ใช้ title เต็มใน attribute แต่แสดง title สั้นใน Mobile
                 toggleBtn.innerHTML = `
                     <span class="text-xl">${category.title.split(' ')[0]}</span>
-                    <span class="category-name-span">${category.title.split(' ').slice(1).join(' ')}</span>
+                    <span class="main-button-short-label">${category.title.split(' ').slice(1).join(' ')}</span>
                 `;
                 categoryListEl.appendChild(toggleBtn);
             });
@@ -1172,10 +1139,6 @@
                     const itemEl = document.querySelector(`#modal-current-order-items div[data-order-item-id="${orderItemId}"]`);
                     if (itemEl) {
                         itemEl.querySelector('[data-item-total]').textContent = `฿${(orderItem.price * orderItem.quantity).toLocaleString('th-TH')}`;
-                        // **สำคัญ: หากมี DOM change ต้องอัปเดต Select ใหม่ด้วย เพื่อให้แสดงค่าที่ถูกต้อง**
-                        // renderCurrentOrderModal() จะแก้ไขปัญหานี้ให้ แต่ถ้าต้องการ In-place ต้องเขียนโค้ดอัปเดต Select เอง
-                        // เนื่องจากความซับซ้อนของการเปลี่ยน size อาจกระทบ price เราจะใช้ renderCurrentOrderModal() เมื่อมีการแยกรายการ
-                        // สำหรับกรณีนี้, หากไม่มีการแยกรายการ (quantity=1) การอัปเดต price และ total ก็เพียงพอ
                     }
                     updateModalTotalPrice(); 
                 }
@@ -1192,7 +1155,7 @@
             // 1. In-place DOM removal
             const itemEl = document.querySelector(`#modal-current-order-items div[data-order-item-id="${orderItemId}"]`);
             if (itemEl) {
-                itemEl.remove();
+                item.remove(); // Use item.remove() not itemEl.remove()
             }
             
             // 2. ถ้าตะกร้าว่าง ให้ render Modal ใหม่เพื่อแสดงข้อความ "ไม่มีรายการ"
