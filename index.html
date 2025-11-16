@@ -428,9 +428,9 @@
         const qrPaymentModal = document.getElementById('qr-payment-modal');
         const qrTotalAmountEl = document.getElementById('qr-total-amount');
         
-        // --- CUSTOMIZABLE LINE LINK ---
-        // ** Line Official Account ID ของร้านค้า (ใช้สำหรับให้ลูกค้าส่งข้อความถึงร้าน) **
-        const LINE_LINK = 'https://line.me/R/ti/p/@nan570402'; 
+        // --- CUSTOMIZABLE LINE LINK (UPDATED) ---
+        // ** Line Link ใหม่ตามที่คุณต้องการ **
+        const LINE_LINK = 'https://line.me/ti/p/Fr9VYI-T7F'; 
 
         let lastCommittedOrder = null;
         let isOwnerLoggedIn = false; 
@@ -490,14 +490,14 @@
 
             const encodedMessage = encodeURIComponent(message);
             
-            // 1. URL ที่ใช้บันทึกใน Firestore (สำหรับเจ้าของร้านคลิก) - Line OA Link + Message
+            // 1. URL ที่ใช้บันทึกใน Firestore (สำหรับเจ้าของร้านคลิก) - Line Link ใหม่ + Message
             const firestoreLineUrl = `${LINE_LINK}?text=${encodedMessage}`;
             
-            // 2. URL สำหรับปุ่มลูกค้า: ใช้ Line Scheme เพื่อบังคับเปิดแอป/Share Sheet
-            const customerLineSchemeUrl = `${LINE_LINK}?text=${encodedMessage}`; // ใช้ LINE_LINK สำหรับปุ่มนี้ด้วย
+            // 2. URL สำหรับปุ่มลูกค้า: ใช้ Line Link ใหม่ + Message
+            const customerLineSchemeUrl = `${LINE_LINK}?text=${encodedMessage}`; 
             
             if (openChat) {
-                // ถ้าเป็นปุ่มที่ลูกค้าคลิก (ใน QR Modal) ให้ใช้ Line OA Link
+                // ถ้าเป็นปุ่มที่ลูกค้าคลิก (ใน QR Modal) ให้ใช้ Line Link
                 window.open(customerLineSchemeUrl, '_blank');
                 alert("โปรดกด 'ส่ง' ใน Line Chat (หรือแชร์ไปยัง Line) เพื่อยืนยันการสั่งซื้อกับร้านค้า");
             }
@@ -1082,9 +1082,9 @@
                         }
                     } 
                     
-                    // 2. ถ้าไม่ใช่ปุ่มโทรออก ให้ใช้ Line OA Link
+                    // 2. ถ้าไม่ใช่ปุ่มโทรออก ให้ใช้ Line OA Link ที่อัปเดตใหม่
                     if (!contactLink) {
-                        // **ใช้ Line OA Link เพื่อบังคับเปิดแอป Line อย่างมีประสิทธิภาพ**
+                        // **ใช้ Line Link ใหม่**
                         contactLink = LINE_LINK; 
                         buttonText = 'แชท Line';
                     }
