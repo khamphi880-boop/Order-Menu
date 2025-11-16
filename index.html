@@ -1091,7 +1091,41 @@
         
         // --- Sales & Report Logic (Simplified) ---
         function updateOrderStatus(orderId, newStatus) {
-            // ... (Code retained) ...
+            if (!isOwnerLoggedIn) {
+                alert("ปฏิเสธ: คุณไม่มีสิทธิ์จัดการออเดอร์นี้ (กรุณา Login ด้วยสิทธิ์เจ้าของร้าน)");
+                return;
+            }
+            
+            const order = orderQueue.find(o => o.id === orderId);
+            if (!order) return;
+
+            const updateData = { status: newStatus };
+            if (newStatus === 'เสร็จแล้ว') {
+                updateData.completedAt = firebase.firestore.FieldValue.serverTimestamp();
+                
+                const batch = db.batch(); 
+                order.items.forEach(item => {
+                    const newLogRef = db.collection("salesLog").doc();
+                    batch.set(newLogRef, {
+                        name: item.name,
+                        size: item.size,
+                        sweetness: item.sweetness,
+                        quantity: item.quantity,
+                        price: item.price,
+                        soldAt: updateData.completedAt,
+                        orderId: orderId
+                    });
+                });
+                batch.commit().then(() => {
+                    console.log("Sales Log batch successfully written!");
+                }).catch((error) => {
+                    console.error("Error writing sales log batch: ", error);
+                });
+            }
+            
+            db.collection("orders").doc(orderId).update(updateData)
+                .then(() => console.log("Order status updated!"))
+                .catch(error => console.error("Error updating order: ", error));
         }
 
         function updateSalesDashboard() {
@@ -1113,7 +1147,31 @@
                 alert("กรุณาเข้าสู่ระบบด้วยสิทธิ์เจ้าของร้านเพื่อดูรายงาน");
                 return;
             }
-            // ... (Report generation logic - retained) ...
+            
+            const menuSales = {};
+            
+            menuSalesLog.forEach(log => {
+                const key = `${log.name} (${log.size}, หวาน ${log.sweetness})`;
+                if (!menuSales[key]) {
+                    menuSales[key] = { name: log.name, size: log.size, sweetness: log.sweetness, totalQuantity: 0, totalRevenue: 0, };
+                }
+                menuSales[key].totalQuantity += log.quantity;
+                menuSales[key].totalRevenue += log.price * log.quantity;
+            });
+            
+            const sortedMenuReport = Object.values(menuSales).sort((a, b) => b.totalQuantity - a.totalQuantity);
+            let tableHTML = '<p class="text-gray-500 mb-4">สรุปยอดขายเมนูทั้งหมดที่ทำเสร็จแล้ว เรียงตามจำนวนแก้วที่ขายได้มากที่สุด</p>';
+            if (sortedMenuReport.length === 0) {
+                tableHTML += '<p class="text-center text-gray-400 mt-10">ยังไม่มีข้อมูลการขายที่เสร็จสมบูรณ์</p>';
+            } else {
+                tableHTML += `<table class="min-w-full divide-y divide-gray-200"><thead class="bg-teal-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เมนู / ขนาด / ความหวาน</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">จำนวน (แก้ว)</th><th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">รายได้รวม (฿)</th></tr></thead><tbody class="bg-white divide-y divide-gray-200">`;
+                sortedMenuReport.forEach( (report, index) => {
+                    tableHTML += `<tr class="${index < 3 ? 'bg-yellow-50 font-semibold' : ''}"><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.name} (${report.size}, หวาน ${report.sweetness})</td><td class="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">${report.totalQuantity.toLocaleString('th-TH')}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-right text-teal-600">${report.totalRevenue.toLocaleString('th-TH')}</td></tr>`;
+                });
+                tableHTML += '</tbody></table>';
+            }
+            menuReportContent.innerHTML = tableHTML;
+            menuReportModal.classList.remove('hidden');
         }
 
         // --- Initial setup ---
