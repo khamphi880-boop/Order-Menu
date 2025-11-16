@@ -429,7 +429,7 @@
         const qrTotalAmountEl = document.getElementById('qr-total-amount');
         
         // --- CUSTOMIZABLE LINE LINK (UPDATED) ---
-        // ** Line Link ใหม่ตามที่คุณต้องการ **
+        // ** Line Link ใหม่ตามที่คุณต้องการ (สำหรับลูกค้าและใช้บันทึกใน Firestore)**
         const LINE_LINK = 'https://line.me/ti/p/Fr9VYI-T7F'; 
 
         let lastCommittedOrder = null;
@@ -1017,7 +1017,7 @@
             });
         });
 
-        // 🔥 UPDATED: renderOrderQueue (ใช้ Line Official Link ในการเปิดแอป Line) 🔥
+        // 🔥 UPDATED: renderOrderQueue (Line Chat เปิดแอป Line เท่านั้น) 🔥
         function renderOrderQueue() {
             const displayQueue = orderQueue.filter(order => order.status !== 'เสร็จแล้ว' && order.status !== 'ยกเลิก');
 
@@ -1064,7 +1064,7 @@
                     orderHeader = `คิวที่ #${queueNumber} | ออเดอร์ #${order.id.substring(0, 8)}...`;
                     
                     // ==========================================================
-                    // NEW LOGIC: ปุ่ม Line Chat ที่ใช้ Line OA Link
+                    // NEW LOGIC: ปุ่ม Line Chat - เปิดแอป Line เท่านั้น
                     // ==========================================================
                     let contactLink = null;
                     let buttonText = 'แชท Line';
@@ -1082,10 +1082,10 @@
                         }
                     } 
                     
-                    // 2. ถ้าไม่ใช่ปุ่มโทรออก ให้ใช้ Line OA Link ที่อัปเดตใหม่
+                    // 2. ถ้าไม่ใช่ปุ่มโทรออก ให้ใช้ Line Scheme พื้นฐานเพื่อเปิดแอป Line
                     if (!contactLink) {
-                        // **ใช้ Line Link ใหม่**
-                        contactLink = LINE_LINK; 
+                        // ใช้ line:// เพื่อสั่งเปิดแอป Line โดยตรงเท่านั้น
+                        contactLink = `line://`; 
                         buttonText = 'แชท Line';
                     }
 
