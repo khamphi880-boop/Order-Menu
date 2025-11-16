@@ -150,7 +150,6 @@
             flex-grow: 1; 
             overflow-y: auto;
             padding-right: 0.5rem;
-            /* ปรับให้ใช้พื้นที่ยืดหยุ่นมากขึ้นเมื่อ order panel ถูกซ่อน */
         }
 
         /* Main Content Control */
@@ -505,7 +504,7 @@
         let currentMenuDoc = null; 
 
         // Get Elements (Sidebar)
-        const cartItemCountEl = document.getElementById('cart-item-count'); // NEW: Cart Badge
+        const cartItemCountEl = document.getElementById('cart-item-count'); 
         const queueOverallCountEl = document.getElementById('queue-overall-count'); 
         const categoryListEl = document.getElementById('category-list');
 
@@ -522,12 +521,12 @@
         const mainTitleEl = document.getElementById('main-title'); 
 
         // Get Elements (Modal)
-        const orderEntryModal = document.getElementById('order-entry-modal'); // NEW Modal Element
-        const modalCurrentOrderItemsEl = document.getElementById('modal-current-order-items'); // NEW: Modal Item List
-        const modalTotalPriceEl = document.getElementById('modal-total-price'); // NEW: Modal Total Price
-        const modalSubmitOrderBtn = document.getElementById('modal-submit-order-btn'); // NEW: Modal Submit Button
-        const modalDeliveryAddressInput = document.getElementById('modal-delivery-address'); // NEW: Modal Address Input
-        const modalOrderNotesInput = document.getElementById('modal-order-notes'); // NEW: Modal Notes Input
+        const orderEntryModal = document.getElementById('order-entry-modal'); 
+        const modalCurrentOrderItemsEl = document.getElementById('modal-current-order-items'); 
+        const modalTotalPriceEl = document.getElementById('modal-total-price'); 
+        const modalSubmitOrderBtn = document.getElementById('modal-submit-order-btn'); 
+        const modalDeliveryAddressInput = document.getElementById('modal-delivery-address'); 
+        const modalOrderNotesInput = document.getElementById('modal-order-notes'); 
         
         const LINE_LINK = 'https://line.me/ti/p/Fr9VYI-T7F'; 
 
@@ -555,13 +554,10 @@
             document.getElementById('qr-payment-modal').classList.remove('hidden');
         }
 
-        // --- NEW: Order Entry Modal Functions ---
+        // --- Order Entry Modal Functions ---
         function openOrderEntryModal() {
-             // Sync data from local state to modal inputs/display
-            renderCurrentOrder(); 
-            // Since we removed the old inputs, we temporarily use the modal inputs for submission logic
-            // For persistence across modal open/close, you would typically save these to a local variable first.
-            // For now, we will simply open the modal.
+             // **สำคัญ:** เรียก renderCurrentOrderModal เพื่อสร้าง/อัปเดตรายการใน Modal ก่อนแสดง
+            renderCurrentOrderModal(); 
             orderEntryModal.classList.remove('hidden');
         }
 
@@ -578,7 +574,6 @@
                 items: currentOrder,
                 total: manualTotal !== null ? manualTotal : currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0),
                 contactInfo: contactInfo,
-                // Use modal inputs for the currently constructed order
                 address: manualAddress !== null ? manualAddress : (modalDeliveryAddressInput.value.trim() || 'รับเองที่ร้าน'), 
                 notes: manualNotes !== null ? manualNotes : modalOrderNotesInput.value.trim()
             };
@@ -634,7 +629,6 @@
             });
         }
 
-        // --- Date Helper Functions (Retained) ---
         function isToday(date) {
             const today = new Date();
             return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
@@ -840,11 +834,11 @@
             categoryListEl.innerHTML = ''; 
             
             const categories = [
-                { id: 'menu-standard', title: '🥛 นม (Standard)', data: menuData, color: 'bg-teal-500 hover:bg-teal-600' },
-                { id: 'menu-matcha', title: '🍵 มัทฉะ', data: matchaMenuData, color: 'bg-emerald-500 hover:bg-emerald-600' },
-                { id: 'menu-coffee', title: '☕ COFFEE', data: coffeeMenuData, color: 'bg-amber-700 hover:bg-amber-800' },
-                { id: 'menu-fruit', title: '🍓 Fruit', data: fruitSmoothieData, color: 'bg-sky-500 hover:bg-sky-600' },
-                { id: 'menu-yogurt', title: '🍇 Yogurt', data: smoothieYogurtData, color: 'bg-indigo-500 hover:bg-indigo-600' },
+                { id: 'menu-standard', title: '🥛 นม/ชา/โกโก้ (Standard)', data: menuData, color: 'bg-teal-500 hover:bg-teal-600' },
+                { id: 'menu-matcha', title: '🍵 มัทฉะ/ชาเขียว', data: matchaMenuData, color: 'bg-emerald-500 hover:bg-emerald-600' },
+                { id: 'menu-coffee', title: '☕ กาแฟ (COFFEE)', data: coffeeMenuData, color: 'bg-amber-700 hover:bg-amber-800' },
+                { id: 'menu-fruit', title: '🍓 สมูทตี้ผลไม้ (Fruit)', data: fruitSmoothieData, color: 'bg-sky-500 hover:bg-sky-600' },
+                { id: 'menu-yogurt', title: '🍇 สมูทตี้โยเกิร์ต (Yogurt)', data: smoothieYogurtData, color: 'bg-indigo-500 hover:bg-indigo-600' },
             ];
 
             categories.forEach(category => {
@@ -897,8 +891,9 @@
                 currentOrder.push(orderItem);
             }
             
-            renderCurrentOrder();
-            updateQueueTracker(); // Update cart badge
+            // **การเปลี่ยนแปลง:** ไม่เรียก renderCurrentOrder() ที่สร้าง HTML ใหม่
+            // แต่ให้เรียกเฉพาะ updateQueueTracker() เพื่ออัปเดต Badge/ยอดรวมเท่านั้น
+            updateQueueTracker(); 
         }
         
         // --- Owner Authentication Logic (Retained) ---
@@ -975,9 +970,13 @@
             document.getElementById('image-upload-modal').classList.add('hidden');
         }
         
-        // --- Core Order Rendering Logic (Updated for Modal) ---
+        // --- Core Order Rendering Logic (Optimized for Modal) ---
 
-        function renderCurrentOrder() {
+        /**
+         * **NEW:** ฟังก์ชันสร้างรายการใน Modal (เรียกเมื่อ Modal ถูกเปิดเท่านั้น)
+         */
+        function renderCurrentOrderModal() {
+            // ดึง Element ภายใน Modal
             const currentOrderItemsEl = document.getElementById('modal-current-order-items');
             const totalPriceEl = document.getElementById('modal-total-price');
             const submitOrderBtn = document.getElementById('modal-submit-order-btn');
@@ -986,7 +985,7 @@
                 currentOrderItemsEl.innerHTML = '<p class="text-gray-400 text-center mt-2 text-sm">เลือกเมนูจากด้านซ้ายเพื่อเริ่ม...</p>';
                 submitOrderBtn.disabled = true;
             } else {
-                currentOrderItemsEl.innerHTML = '';
+                currentOrderItemsEl.innerHTML = ''; // Clear existing content (This is OK, since it only runs on modal open)
                 currentOrder.forEach(item => {
                     const menuItem = getItemDataById(item.itemId);
                     const availableSizes = Object.keys(menuItem.prices);
@@ -995,6 +994,8 @@
                     const sweetnessDropdown = sweetnessOptions.map(level => `<option value="${level}" ${item.sweetness === level ? 'selected' : ''}>${level}</option>`).join('');
 
                     const itemEl = document.createElement('div');
+                    // **เพิ่ม data-id สำหรับการอัปเดตแบบ In-place**
+                    itemEl.setAttribute('data-order-item-id', item.id);
                     itemEl.className = 'flex items-center justify-between bg-gray-100 p-2 rounded-lg'; 
                     itemEl.innerHTML = `
                         <div class="flex-grow grid grid-cols-2 gap-1 text-xs">
@@ -1008,12 +1009,12 @@
                                 <select class="text-xs p-1 border rounded" onchange="updateOrderItemSweetness(${item.id}, this.value)">${sweetnessDropdown}</select>
                             </div>
                         </div>
-                        <div class="flex items-center gap-1 ml-2">
+                        <div class="flex items-center gap-1 ml-2" data-item-quantity-control>
                             <button class="w-5 h-5 bg-gray-200 rounded-full text-sm" onclick="updateOrderItemQuantity(${item.id}, -1)">-</button>
-                            <span class="text-sm">${item.quantity}</span>
+                            <span class="text-sm" data-item-quantity>${item.quantity}</span>
                             <button class="w-5 h-5 bg-gray-200 rounded-full text-sm" onclick="updateOrderItemQuantity(${item.id}, 1)">+</button>
                         </div>
-                        <span class="w-16 text-right font-semibold text-sm">฿${(item.price * item.quantity).toLocaleString('th-TH')}</span>
+                        <span class="w-16 text-right font-semibold text-sm" data-item-total>฿${(item.price * item.quantity).toLocaleString('th-TH')}</span>
                         <button class="ml-1 text-red-500 hover:text-red-700" onclick="removeOrderItem(${item.id})">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
@@ -1022,64 +1023,123 @@
                 });
                 submitOrderBtn.disabled = false;
             }
-            const total = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
-            totalPriceEl.textContent = `฿${total.toLocaleString('th-TH')}`;
+            updateModalTotalPrice();
         }
 
+        /**
+         * **NEW:** ฟังก์ชันอัปเดตยอดรวมใน Modal (รันบ่อย)
+         */
+        function updateModalTotalPrice() {
+            const total = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            document.getElementById('modal-total-price').textContent = `฿${total.toLocaleString('th-TH')}`;
+        }
+        
+        /**
+         * **NEW/OPTIMIZED:** ฟังก์ชันอัปเดตปริมาณ (รันบ่อย)
+         * อัปเดตปริมาณและราคารวมของ Item นั้นโดยตรง ไม่ใช่สร้างรายการทั้งหมดใหม่
+         */
+        function updateOrderItemQuantity(orderItemId, change) {
+            const orderItemIndex = currentOrder.findIndex(item => item.id === orderItemId);
+            if (orderItemIndex === -1) return;
+            const orderItem = currentOrder[orderItemIndex];
+
+            if (orderItem.quantity + change > 0) {
+                orderItem.quantity += change;
+
+                // 1. In-place DOM update: อัปเดต Quantity และ Total Price ของ Element นั้น
+                const itemEl = document.querySelector(`#modal-current-order-items div[data-order-item-id="${orderItemId}"]`);
+                if (itemEl) {
+                    itemEl.querySelector('[data-item-quantity]').textContent = orderItem.quantity;
+                    itemEl.querySelector('[data-item-total]').textContent = `฿${(orderItem.price * orderItem.quantity).toLocaleString('th-TH')}`;
+                }
+            } else if (orderItem.quantity + change === 0) {
+                removeOrderItem(orderItemId); 
+                return;
+            }
+            
+            // 2. อัปเดตยอดรวมและ Badge
+            updateModalTotalPrice(); 
+            updateQueueTracker(); 
+        }
+
+        /**
+         * **NEW/OPTIMIZED:** ฟังก์ชันอัปเดตความหวาน (สร้าง Item ใหม่ถ้าปริมาณ > 1)
+         */
         function updateOrderItemSweetness(orderItemId, newSweetness) {
             const orderItem = currentOrder.find(item => item.id === orderItemId);
+            if (!orderItem) return;
+            
             if (orderItem.sweetness !== newSweetness) {
                 if (orderItem.quantity > 1) {
                     orderItem.quantity -= 1;
                     const newItem = {...orderItem, id: Date.now(), sweetness: newSweetness, quantity: 1};
                     currentOrder.push(newItem);
+                    
+                    // หากมีการแยกรายการ ให้สร้างรายการ Modal ใหม่ทั้งหมดเพื่อแสดงผล (ยอมให้กระตุกครั้งเดียว)
+                    renderCurrentOrderModal(); 
                 } else {
                     orderItem.sweetness = newSweetness;
+                    // หากเป็นการเปลี่ยนความหวานของรายการเดียว ไม่ต้อง render ใหม่ทั้งหมด แค่อัปเดตยอดรวม
+                    updateModalTotalPrice(); 
                 }
             }
-            renderCurrentOrder();
-            updateQueueTracker(); // Update cart badge
+             updateQueueTracker(); 
         }
         
+        /**
+         * **NEW/OPTIMIZED:** ฟังก์ชันอัปเดตขนาด (สร้าง Item ใหม่ถ้าปริมาณ > 1)
+         */
         function updateOrderItemSize(orderItemId, newSize) {
             const orderItem = currentOrder.find(item => item.id === orderItemId);
             const menuItem = getItemDataById(orderItem.itemId);
+            if (!orderItem || menuItem.prices[newSize] === undefined) return;
             
-            if (menuItem.prices[newSize] !== undefined) {
-                if (orderItem.size !== newSize) {
-                    if (orderItem.quantity > 1) {
-                        orderItem.quantity -= 1;
-                        const newPrice = menuItem.prices[newSize];
-                        const newItem = {...orderItem, id: Date.now(), size: newSize, price: newPrice, quantity: 1};
-                        currentOrder.push(newItem);
-                    } else {
-                        orderItem.size = newSize;
-                        orderItem.price = menuItem.prices[newSize];
+            if (orderItem.size !== newSize) {
+                const newPrice = menuItem.prices[newSize];
+                
+                if (orderItem.quantity > 1) {
+                    orderItem.quantity -= 1;
+                    const newItem = {...orderItem, id: Date.now(), size: newSize, price: newPrice, quantity: 1};
+                    currentOrder.push(newItem);
+                    
+                    // หากมีการแยกรายการ ให้สร้างรายการ Modal ใหม่ทั้งหมดเพื่อแสดงผล (ยอมให้กระตุกครั้งเดียว)
+                    renderCurrentOrderModal(); 
+                } else {
+                    orderItem.size = newSize;
+                    orderItem.price = newPrice;
+                    
+                    // หากเป็นการเปลี่ยนขนาดของรายการเดียว
+                    const itemEl = document.querySelector(`#modal-current-order-items div[data-order-item-id="${orderItemId}"]`);
+                    if (itemEl) {
+                        itemEl.querySelector('[data-item-total]').textContent = `฿${(orderItem.price * orderItem.quantity).toLocaleString('th-TH')}`;
                     }
+                    updateModalTotalPrice(); 
                 }
             }
-            renderCurrentOrder();
-            updateQueueTracker(); // Update cart badge
+            updateQueueTracker(); 
         }
         
-        function updateOrderItemQuantity(orderItemId, change) {
-            const orderItem = currentOrder.find(item => item.id === orderItemId);
-            if (orderItem.quantity + change > 0) {
-                orderItem.quantity += change;
-            } else if (orderItem.quantity + change === 0) {
-                removeOrderItem(orderItemId); 
-                return;
-            }
-            renderCurrentOrder();
-            updateQueueTracker(); // Update cart badge
-        }
-
+        /**
+         * **NEW/OPTIMIZED:** ฟังก์ชันลบรายการ (ลบ Element ตรงๆ)
+         */
         function removeOrderItem(orderItemId) {
             currentOrder = currentOrder.filter(item => item.id !== orderItemId);
-            renderCurrentOrder();
-            updateQueueTracker(); // Update cart badge
+            
+            // 1. In-place DOM removal
+            const itemEl = document.querySelector(`#modal-current-order-items div[data-order-item-id="${orderItemId}"]`);
+            if (itemEl) {
+                itemEl.remove();
+            }
+            
+            // 2. ถ้าตะกร้าว่าง ให้ render Modal ใหม่เพื่อแสดงข้อความ "ไม่มีรายการ"
+            if (currentOrder.length === 0) {
+                 renderCurrentOrderModal();
+            }
+            
+            updateModalTotalPrice(); 
+            updateQueueTracker(); 
         }
-
+        
         // 🔥 UPDATED: Submit Order (Using Modal Inputs) 🔥
         modalSubmitOrderBtn.addEventListener('click', () => {
             const orderTotal = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -1117,14 +1177,13 @@
                      contactLineURL: contactLineURL 
                 };
                 
-                // Clear inputs/state
+                // Clear state
                 currentOrder = []; 
                 modalDeliveryAddressInput.value = '';
                 modalOrderNotesInput.value = ''; 
                 
-                closeOrderEntryModal(); // Close the modal
-                renderCurrentOrder(); 
-                updateQueueTracker(); // Update cart badge
+                closeOrderEntryModal(); 
+                updateQueueTracker(); 
                 showPaymentQRModal(orderTotal);
             })
             .catch(error => {
@@ -1343,11 +1402,8 @@
         }
         
         renderMenu();
-        renderCurrentOrder();
+        // **การเปลี่ยนแปลง:** ลบ renderCurrentOrder() ออกจากการเริ่มต้น
         initFirebaseListeners();
     </script>
 </body>
 </html>
-
-
-
