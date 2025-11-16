@@ -25,7 +25,7 @@
             min-height: 100vh;
         }
         .sidebar {
-            width: 350px; /* Fixed width for the menu sidebar */
+            width: 280px; 
             background-color: #ffffff; /* bg-white */
             padding: 1rem;
             box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
@@ -35,7 +35,7 @@
             max-height: 100vh;
             display: flex;
             flex-direction: column;
-            gap: 1.5rem; /* Spacing between menu categories and order panel */
+            gap: 1rem; /* Reduced spacing */
         }
         .main-content {
             flex-grow: 1;
@@ -45,7 +45,7 @@
             gap: 1.5rem;
         }
 
-        /* --- Menu Card Styles (Retained) --- */
+        /* --- Menu Card Styles --- */
         .main-menu-card {
             padding: 0.5rem;
             border-radius: 0.5rem;
@@ -61,13 +61,13 @@
         }
         .menu-name {
             font-weight: 600;
-            font-size: 0.5rem;
+            font-size: 0.9rem;
             line-height: 1.1;
             margin-bottom: 0.25rem;
         }
         .menu-price-tag {
             font-weight: 700;
-            font-size: 0.5rem;
+            font-size: 0.8rem;
         }
         .category-toggle-btn {
             display: flex;
@@ -82,33 +82,89 @@
             margin-bottom: 0.5rem;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
-        /* Adjusted Grid for Main Content (Menu Items) */
+        
+        /* Dashboard/Queue Button Style (New) */
+        .dashboard-toggle-btn {
+            background-color: #10b981; /* bg-emerald-500 */
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            margin-bottom: 0.5rem;
+        }
+        .queue-badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: #ef4444; /* bg-red-500 */
+            color: white;
+            border-radius: 50%;
+            padding: 0.25rem 0.6rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        /* Grid for Main Content (Menu Items) */
         .menu-container-grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr)); /* NEW: 3 columns in the main content area */
+            grid-template-columns: repeat(2, minmax(0, 1fr)); 
             gap: 0.75rem;
             padding-bottom: 1rem;
+        }
+        /* Grid สำหรับจอขนาดใหญ่ (PC/Desktop) */
+        @media (min-width: 1024px) { 
+            .menu-container-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr)); 
+            }
+        }
+        @media (min-width: 768px) and (max-width: 1023px) { 
+            .menu-container-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr)); 
+            }
         }
         
         /* Utility Styles (Retained) */
         .qr-image-container { width: 256px; height: 256px; margin: 0 auto; }
-        .menu-image { width: 100%; height: 120px; object-fit: cover; border-radius: 0.25rem; margin-bottom: 0.5rem; border: 1px solid #e5e7eb; }
-        .upload-img-btn { position: absolute; top: 5px; right: 5px; background: rgba(0, 0, 0, 0.6); color: white; padding: 4px 8px; border-radius: 50%; font-size: 0.5rem; z-index: 10; cursor: pointer; display: none; }
+        
+        .menu-image { 
+            width: 100%; 
+            height: 120px; 
+            object-fit: cover; 
+            border-radius: 0.25rem; 
+            margin-bottom: 0.5rem; 
+            border: 1px solid #e5e7eb; 
+        }
+        .upload-img-btn { position: absolute; top: 5px; right: 5px; background: rgba(0, 0, 0, 0.6); color: white; padding: 4px 8px; border-radius: 50%; font-size: 0.75rem; z-index: 10; cursor: pointer; display: none; }
         .main-menu-card:hover .upload-img-btn { display: block; }
 
         /* Sidebar Specific Styles */
         #category-list {
             flex-shrink: 0;
-            max-height: 40vh; /* Adjust category list height */
+            flex-grow: 1; 
             overflow-y: auto;
             padding-right: 0.5rem;
+            max-height: 40vh; 
         }
         #order-entry-panel {
-            flex-grow: 1;
             flex-shrink: 0;
         }
         #current-order-items {
-            max-height: 150px; /* Reduced space for items in sidebar */
+            max-height: 120px; 
+        }
+
+        /* Main Content Control */
+        .main-content-section {
+            display: none;
+        }
+        .main-content-section.active {
+            display: block;
         }
     </style>
 </head>
@@ -117,10 +173,15 @@
     <div class="app-container">
 
         <div class="sidebar">
-            <header class="text-center mb-1">
-                <h2 class="text-xl font-bold text-teal-600">🥤 เมนูเครื่องดื่ม</h2>
+            <header class="text-center mb-2">
+                <h2 class="text-xl font-bold text-teal-600">เมนูสั่งซื้อ</h2>
             </header>
             
+            <div id="dashboard-toggle-btn" class="dashboard-toggle-btn bg-emerald-500 hover:bg-emerald-600 shadow-xl opacity-75" onclick="showMainContent('queue')">
+                <span>🥤 ระบบคิวและสถานะออเดอร์</span>
+                <span id="queue-overall-count" class="queue-badge">0</span>
+            </div>
+
             <div id="category-list" class="space-y-3">
                 <p class="text-gray-400 text-center">กำลังโหลดหมวดหมู่...</p>
             </div>
@@ -155,8 +216,10 @@
 
         <div class="main-content">
             
-            <div class="flex justify-between items-center mb-4">
-                <h1 class="text-3xl font-bold text-gray-800">📋 รายการเมนูและคิวออเดอร์</h1>
+            <div class="flex justify-between items-center mb-4 flex-shrink-0">
+                <h1 class="text-3xl font-bold text-gray-800" id="main-title">
+                    รายการเมนูและคิวออเดอร์
+                </h1>
                 <div class="flex space-x-2">
                     <button id="owner-login-btn" onclick="showOwnerLogin()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
                         👤 Login (Owner)
@@ -167,39 +230,47 @@
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-2xl shadow-lg flex-shrink-0">
-                <h3 class="text-xl font-semibold mb-3 border-b pb-2 text-teal-700" id="main-menu-header">
-                    เลือกหมวดหมู่จากแถบด้านข้างเพื่อดูรายการเมนู...
-                </h3>
-                <div id="menu-grid" class="overflow-y-auto no-scrollbar max-h-[40vh]">
-                    <p class="text-gray-400 text-center mt-4">คลิกที่หมวดหมู่ทางด้านซ้ายเพื่อแสดงเมนู</p>
+            <div id="menu-section" class="main-content-section active flex-grow overflow-y-auto">
+                <div class="bg-white p-6 rounded-2xl shadow-lg h-full">
+                    <h3 class="text-xl font-semibold mb-3 border-b pb-2 text-teal-700" id="main-menu-header">
+                        เลือกหมวดหมู่จากแถบด้านข้างเพื่อดูรายการเมนู...
+                    </h3>
+                    <div id="menu-grid" class="overflow-y-auto no-scrollbar">
+                        <p class="text-gray-400 text-center mt-4">คลิกที่หมวดหมู่ทางด้านซ้ายเพื่อแสดงเมนู</p>
+                    </div>
                 </div>
             </div>
             
-            <div id="queue-status-tracker" class="bg-white p-4 rounded-xl shadow-lg border border-gray-200 flex-shrink-0" style="display: none;">
-                <h3 class="text-xl font-semibold mb-3 border-b pb-2 text-indigo-700">📌 สรุปสถานะคิวและการขาย</h3>
-                <div class="grid grid-cols-3 gap-4 text-center">
-                    <div class="bg-blue-50 p-3 rounded-lg">
-                        <p class="text-sm text-blue-600 font-medium">รอในคิว (Queue)</p>
-                        <p id="queue-count-queue" class="text-3xl font-bold text-blue-800">0</p>
-                    </div>
-                    <div class="bg-yellow-50 p-3 rounded-lg">
-                        <p class="text-sm text-yellow-600 font-medium">กำลังทำ (In Progress)</p>
-                        <p id="queue-count-doing" class="text-3xl font-bold text-yellow-800">0</p>
-                    </div>
-                    <div class="bg-green-50 p-3 rounded-lg cursor-pointer hover:bg-green-100 transition duration-150" onclick="showMenuReport()">
-                        <p class="text-sm text-green-600 font-medium">รวมยอดขาย (Today)</p>
-                        <p id="sales-today" class="text-3xl font-bold text-green-800">฿0</p>
-                    </div>
-                </div>
-            </div>
+            <div id="queue-section" class="main-content-section flex-grow overflow-y-auto">
+                <div class="bg-white p-6 rounded-2xl shadow-lg h-full space-y-4">
 
-            <div class="bg-white p-6 rounded-2xl shadow-lg flex-grow">
-                <h2 class="text-2xl font-semibold mb-4 border-b pb-2">คิวออเดอร์ทั้งหมด</h2> 
-                <div id="order-queue" class="space-y-4 max-h-[40vh] overflow-y-auto no-scrollbar pr-2">
-                        <p class="text-gray-400 text-center mt-4">กำลังโหลดคิวจาก Firebase...</p>
+                    <div id="queue-status-tracker" class="bg-white p-4 rounded-xl shadow-lg border border-gray-200 flex-shrink-0" style="display: none;">
+                        <h3 class="text-xl font-semibold mb-3 border-b pb-2 text-indigo-700">📌 สรุปสถานะคิวและการขาย</h3>
+                        <div class="grid grid-cols-3 gap-4 text-center">
+                            <div class="bg-blue-50 p-3 rounded-lg">
+                                <p class="text-sm text-blue-600 font-medium">รอในคิว (Queue)</p>
+                                <p id="queue-count-queue" class="text-3xl font-bold text-blue-800">0</p>
+                            </div>
+                            <div class="bg-yellow-50 p-3 rounded-lg">
+                                <p class="text-sm text-yellow-600 font-medium">กำลังทำ (In Progress)</p>
+                                <p id="queue-count-doing" class="text-3xl font-bold text-yellow-800">0</p>
+                            </div>
+                            <div class="bg-green-50 p-3 rounded-lg cursor-pointer hover:bg-green-100 transition duration-150" onclick="showMenuReport()">
+                                <p class="text-sm text-green-600 font-medium">รวมยอดขาย (Today)</p>
+                                <p id="sales-today" class="text-3xl font-bold text-green-800">฿0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-xl shadow-inner">
+                        <h2 class="text-2xl font-semibold mb-4 border-b pb-2 text-gray-800">คิวออเดอร์ทั้งหมด</h2> 
+                        <div id="order-queue" class="space-y-4 max-h-[60vh] overflow-y-auto no-scrollbar pr-2">
+                                <p class="text-gray-400 text-center mt-4">กำลังโหลดคิวจาก Firebase...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
+            
         </div>
     </div>
     
@@ -427,41 +498,45 @@
         let currentMenuDoc = null; 
 
         // Get Elements
-        const categoryListEl = document.getElementById('category-list'); // NEW Element for category buttons
-        const menuGrid = document.getElementById('menu-grid'); // Now this holds the menu items for the selected category
-        const mainMenuHeaderEl = document.getElementById('main-menu-header'); // NEW Element for main menu header
+        const categoryListEl = document.getElementById('category-list');
+        const menuGrid = document.getElementById('menu-grid');
+        const mainMenuHeaderEl = document.getElementById('main-menu-header');
         
         const currentOrderItemsEl = document.getElementById('current-order-items');
         const totalPriceEl = document.getElementById('total-price');
         const submitOrderBtn = document.getElementById('submit-order-btn');
         const orderQueueEl = document.getElementById('order-queue');
+        const queueOverallCountEl = document.getElementById('queue-overall-count'); // NEW: Overall Queue Count Badge
         
         // --- UPDATED INPUTS ---
         const deliveryAddressInput = document.getElementById('delivery-address'); 
         const orderNotesInput = document.getElementById('order-notes'); 
         // ----------------------
 
-        const salesDashboardContainer = document.getElementById('queue-status-tracker'); // Changed ID reference
+        const salesDashboardContainer = document.getElementById('queue-status-tracker');
         const salesTodayEl = document.getElementById('sales-today');
-        const queueCountQueueEl = document.getElementById('queue-count-queue'); // NEW
-        const queueCountDoingEl = document.getElementById('queue-count-doing'); // NEW
+        const queueCountQueueEl = document.getElementById('queue-count-queue');
+        const queueCountDoingEl = document.getElementById('queue-count-doing');
         
         const menuReportModal = document.getElementById('menu-report-modal');
         const menuReportContent = document.getElementById('menu-report-content');
         const qrPaymentModal = document.getElementById('qr-payment-modal');
         const qrTotalAmountEl = document.getElementById('qr-total-amount');
         
-        // --- CUSTOMIZABLE LINE LINK (USED ONLY FOR CUSTOMER QR MODAL/FIREBASE SAVE) ---
+        // Dynamic Main Content Sections
+        const menuSection = document.getElementById('menu-section'); // Section 2A
+        const queueSection = document.getElementById('queue-section'); // Section 2B
+        const mainTitleEl = document.getElementById('main-title'); // Main title in content header
+
         const LINE_LINK = 'https://line.me/ti/p/Fr9VYI-T7F'; 
 
         let lastCommittedOrder = null;
         let isOwnerLoggedIn = false; 
         let orderSourceTag = ''; 
         
-        // NEW GLOBAL VARIABLES FOR NOTIFICATION
         const notificationSound = document.getElementById('notification-sound'); 
         let lastQueueLength = 0; 
-        let activeCategoryContainerId = null; // Track which category is currently open
+        let activeCategoryContainerId = null; 
 
 
         // Helper function to find item data from all menus (คงเดิม)
@@ -558,7 +633,7 @@
             return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
         }
         
-        // 🔥 UPDATED: Firebase Realtime Listeners (เพิ่ม Logic เสียงเตือนและอัปเดต Dashboard) 🔥
+        // 🔥 Firebase Realtime Listeners 🔥
         function initFirebaseListeners() {
             db.collection("orders") 
                 .orderBy("status", "asc") 
@@ -597,23 +672,63 @@
         }
 
         /**
-         * NEW: Updates the queue count display in the tracker bar.
+         * NEW: Updates the queue count display in the tracker bar and the overall badge.
          */
         function updateQueueTracker() {
-            if (!isOwnerLoggedIn) {
-                salesDashboardContainer.style.display = 'none';
-                return;
-            }
             const queueCount = orderQueue.filter(order => order.status === 'คิว').length;
             const doingCount = orderQueue.filter(order => order.status === 'กำลังทำ').length;
+            const overallCount = queueCount + doingCount;
             
+            // Update the badge on the main menu button
+            queueOverallCountEl.textContent = overallCount;
+            if (overallCount > 0) {
+                queueOverallCountEl.classList.remove('hidden');
+            } else {
+                 queueOverallCountEl.classList.add('hidden');
+            }
+
+            // Update the detailed tracker bar (only visible in queue-section for owner)
             queueCountQueueEl.textContent = queueCount;
             queueCountDoingEl.textContent = doingCount;
-            salesDashboardContainer.style.display = 'flex'; // Ensure the flex container is visible
+            
+            if (isOwnerLoggedIn) {
+                salesDashboardContainer.style.display = 'flex'; 
+            } else {
+                salesDashboardContainer.style.display = 'none';
+            }
         }
         
-        // --- Core Application Logic (Modified for new layout) ---
-        
+        /**
+         * NEW: Toggles between Menu Section and Queue Section in Main Content.
+         * @param {string} section 'menu' or 'queue'
+         */
+        function showMainContent(section) {
+            menuSection.classList.remove('active');
+            queueSection.classList.remove('active');
+            
+            document.getElementById('dashboard-toggle-btn').classList.remove('opacity-75', 'shadow-xl'); 
+
+            // De-select all category buttons
+            document.querySelectorAll('#category-list .category-toggle-btn').forEach(btn => {
+                btn.classList.remove('opacity-75', 'shadow-xl'); 
+            });
+            
+            if (section === 'menu') {
+                menuSection.classList.add('active');
+                mainTitleEl.textContent = 'รายการเมนู';
+                // Re-select the active category button
+                 if (activeCategoryContainerId) {
+                    const activeBtn = document.getElementById(activeCategoryContainerId);
+                    if (activeBtn) activeBtn.classList.add('opacity-75', 'shadow-xl');
+                 }
+            } else if (section === 'queue') {
+                queueSection.classList.add('active');
+                mainTitleEl.textContent = '✅ สถานะคิวและแดชบอร์ด';
+                document.getElementById('dashboard-toggle-btn').classList.add('opacity-75', 'shadow-xl'); 
+            }
+        }
+
+
         function createMenuItemButton(item, size, price, colorClass) {
             let sizeLabel = size;
             
@@ -640,7 +755,6 @@
             }
 
             const menuItem = document.createElement('div');
-            // Remove specific colorClass for menu items, use standard styling
             menuItem.className = `main-menu-card bg-white hover:bg-gray-100 border border-gray-200`; 
             menuItem.setAttribute('onclick', `addToOrder(${item.id}, '${size.replace(/'/g, "\\'")}', ${price})`);
 
@@ -668,20 +782,18 @@
          */
         function renderCategoryMenu(categoryName, menuData, colorClass) {
             menuGrid.innerHTML = '';
-            menuGrid.className = 'menu-container-grid'; // Apply grid class to menuGrid
+            menuGrid.className = 'menu-container-grid'; 
 
             menuData.forEach(item => {
                 const availableSizes = Object.keys(item.prices);
                 
                 availableSizes.forEach(size => {
                     const price = item.prices[size];
-                    // We pass the colorClass for potential future use, but use generic styling for the card itself
                     const button = createMenuItemButton(item, size, price, colorClass); 
                     menuGrid.appendChild(button);
                 });
             });
             
-            // Show image upload buttons if logged in
             if (isOwnerLoggedIn) {
                 document.querySelectorAll('.upload-img-btn').forEach(btn => btn.style.display = 'block');
             }
@@ -689,10 +801,13 @@
 
 
         /**
-         * NEW LOGIC: Shows menu items of the selected category in the Main Content.
+         * Shows menu items of the selected category in the Main Content.
          */
         function toggleCategory(categoryData, categoryTitle, containerId) {
-            // Remove 'active' class from previous button
+            // Switch to Menu View
+            showMainContent('menu');
+
+            // Remove 'active' class from previous category button
             if (activeCategoryContainerId) {
                 const prevBtn = document.getElementById(activeCategoryContainerId);
                 if (prevBtn) {
@@ -700,7 +815,7 @@
                 }
             }
 
-            // Set 'active' class on current button
+            // Set 'active' class on current category button
             const currentBtn = document.getElementById(containerId);
             if (currentBtn) {
                 currentBtn.classList.add('opacity-75', 'shadow-xl'); 
@@ -732,22 +847,18 @@
 
             categories.forEach(category => {
                 const toggleBtn = document.createElement('div');
-                toggleBtn.id = category.id; // Assign ID to the button
+                toggleBtn.id = category.id;
                 toggleBtn.className = `category-toggle-btn ${category.color}`;
-                // NEW: Call toggleCategory with category data
-                toggleBtn.setAttribute('onclick', `toggleCategory(${JSON.stringify(category.data).replace(/'/g, "\\'")}, '${category.title.replace(/'/g, "\\'")}', '${category.id}')`);
+                // Using JSON.stringify and replace to handle quotes in attributes correctly
+                toggleBtn.setAttribute('onclick', `toggleCategory(${JSON.stringify(category.data).replace(/"/g, "'")}, '${category.title.replace(/'/g, "\\'")}', '${category.id}')`);
                 toggleBtn.innerHTML = `
                     <span>${category.title}</span>
                 `;
                 categoryListEl.appendChild(toggleBtn);
             });
             
-            // Automatically open the first category on load
-            if (categories.length > 0) {
-                 const firstCat = categories[0];
-                 // Call toggleCategory with first category data
-                 toggleCategory(firstCat.data, firstCat.title, firstCat.id); 
-            }
+            // Automatically select the Queue Dashboard on load
+             showMainContent('queue');
         }
         
         function addToOrder(itemId, size = null, price = null) {
@@ -814,10 +925,6 @@
                 document.getElementById('owner-login-btn').classList.add('hidden');
                 document.getElementById('owner-logout-btn').classList.remove('hidden');
                 
-                salesDashboardContainer.style.display = 'flex'; // Use flex now
-                document.querySelectorAll('.upload-img-btn').forEach(btn => btn.style.display = 'block');
-                
-                alert(`ผู้ใช้: ${user.email} เข้าสู่ระบบแล้ว (สิทธิ์เจ้าของร้าน)`);
                 updateQueueTracker(); 
                 updateSalesDashboard();
             } else {
@@ -825,8 +932,7 @@
                 document.getElementById('owner-login-btn').classList.remove('hidden');
                 document.getElementById('owner-logout-btn').classList.add('hidden');
                 
-                salesDashboardContainer.style.display = 'none'; 
-                document.querySelectorAll('.upload-img-btn').forEach(btn => btn.style.display = 'none');
+                updateQueueTracker(); 
             }
         }
         
@@ -852,9 +958,6 @@
             
             allMenuData[itemIndex].imageUrl = imageUrl;
             
-            // Re-render menu to show the updated image immediately
-            // Since we use renderMenu to setup the categories, we need to call renderCategoryMenu 
-            // for the currently active category to update the items in the main content.
             const categories = [
                 { id: 'menu-standard', data: menuData, title: '🥛 นม/ชา/โกโก้ (Standard)' },
                 { id: 'menu-matcha', data: matchaMenuData, title: '🍵 เมนูมัทฉะ/ชาเขียว' },
@@ -867,7 +970,7 @@
             if (activeCat) {
                 renderCategoryMenu(activeCat.title, activeCat.data, '');
             } else {
-                 renderMenu(); // Fallback: just render categories (shouldn't happen)
+                 renderMenu();
             }
             
             alert("บันทึก URL รูปภาพสำเร็จ! (ข้อมูลจะหายไปเมื่อรีเฟรชหน้า หากไม่ได้บันทึกลง Firestore)");
@@ -975,19 +1078,7 @@
             totalPriceEl.textContent = `฿${total.toLocaleString('th-TH')}`;
         }
 
-
-        // --- Share Summary Logic (คงเดิม) ---
-        function shareOrderSummary() {
-            if (!lastCommittedOrder) {
-                alert('ไม่พบข้อมูลออเดอร์ล่าสุดสำหรับแชร์');
-                return;
-            }
-            
-            // ... (Share text generation logic - retained) ...
-        }
-
-
-        // 🔥 UPDATED: Submit Order (ปรับปรุงการจัดการ contactInfo) 🔥
+        // 🔥 UPDATED: Submit Order 🔥
         submitOrderBtn.addEventListener('click', () => {
             const orderTotal = currentOrder.reduce((sum, item) => sum + item.price * item.quantity, 0);
             const address = deliveryAddressInput.value.trim(); 
@@ -999,13 +1090,8 @@
                  return; 
             }
             
-            // 2. กำหนด contactInfo เป็นค่าเริ่มต้น
             const contactInfo = 'ไม่ระบุช่องทางติดต่อ'; 
-            
-            // 3. Generate the Line Chat URL (for owner tracking)
             const contactLineURL = sendLineMessage(false, contactInfo, address || 'รับเองที่ร้าน', orderTotal, notes); 
-            
-            // --- Proceed with submission ---
             
             db.collection("orders").add({ 
                 items: currentOrder,
@@ -1046,6 +1132,7 @@
 
         // 🔥 UPDATED: renderOrderQueue (Line Chat เปิดแอป Line เท่านั้น) 🔥
         function renderOrderQueue() {
+            // Filter out 'เสร็จแล้ว' and 'ยกเลิก' to show only active queue items
             const displayQueue = orderQueue.filter(order => order.status !== 'เสร็จแล้ว' && order.status !== 'ยกเลิก');
 
             if (displayQueue.length === 0) {
@@ -1104,20 +1191,17 @@
                         }
                     } 
                     
-                    // 2. ถ้าไม่ใช่ปุ่มโทรออก ให้ใช้ Line Scheme พื้นฐานเพื่อเปิดแอป Line (ตามที่ผู้ใช้ต้องการ)
                     if (!contactLink) {
                         contactLink = `line://`; 
                         buttonText = 'แชท Line';
                     }
 
-                    // สร้างปุ่มที่คัดลอก ID แล้วเปิด Link (ใช้ copyAndOpenLine)
                     lineContactButton = `<button onclick="copyAndOpenLine('${order.id}', '${contactLink.replace(/'/g, "\\'")}', '${buttonText.replace(/'/g, "\\'")}')" 
                                             class="text-xs ${buttonColor} text-white font-bold py-1 px-3 rounded-lg flex items-center space-x-1">
                                             ${iconSvg}
                                             <span>${buttonText}</span>
                                         </button>`;
                     
-                    // Action Buttons (Accept, Done, Cancel)
                     if (order.status === 'คิว') {
                         actionButtonsHtml += `<button class="text-xs bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-1 px-3 rounded-lg" onclick="updateOrderStatus('${order.id}', 'กำลังทำ')">รับออเดอร์</button>`;
                     } else if (order.status === 'กำลังทำ') {
@@ -1131,7 +1215,6 @@
                         sourceTagDisplay = `<p class="text-xs text-purple-600 font-semibold mt-1">🔗 ที่มา: ${order.sourceTag.trim()}</p>`;
                     }
                 } else {
-                    // CUSTOMER VIEW: Show queue number and status info only
                     orderHeader = `คิวที่ #${queueNumber} | ออเดอร์ #${order.id.substring(0, 8)}...`;
                     contactDisplay = ''; 
                 }
@@ -1218,7 +1301,6 @@
                 if (isToday(saleDate)) { salesToday += totalRevenue; }
             });
             
-            // Only update the sales-today element which is in the tracker
             salesTodayEl.textContent = `฿${salesToday.toLocaleString('th-TH')}`;
         }
 
@@ -1266,4 +1348,3 @@
     </script>
 </body>
 </html>
-
